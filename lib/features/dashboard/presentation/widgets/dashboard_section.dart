@@ -80,7 +80,6 @@ class _DashboardSectionState extends State<DashboardSection> {
       final data = <String, int>{
         'Total Users': usersList.length,
         'Pickups Completed': pickupsCompletedList.length,
-        'Total Events': totalEvents,
         'Communities': communitiesList.length,
         'Trees Planted': treesPlanted,
         'Avg Volunteers/Event': eventsPerVolunteer,
@@ -174,7 +173,6 @@ class _DashboardSectionState extends State<DashboardSection> {
         'Total Users',
         'Trees Planted',
         'Pickups Completed',
-        'Total Events',
         'Communities',
       ];
       final cards = keys
