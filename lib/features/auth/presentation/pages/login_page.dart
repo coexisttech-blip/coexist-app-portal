@@ -2,6 +2,7 @@ import '../widgets/login_page_form.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import '../../../../core/constants/app_constants.dart';
 import '../../../../core/constants/app_spacing.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
@@ -98,6 +99,13 @@ class _LoginPageState extends State<LoginPage> {
                                     'Admin access to manage app configurations, users and updates.',
                                     style: AppTextStyles.bodyLarge.copyWith(
                                       color: AppColors.neutralTextGrey,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 12),
+                                  Text(
+                                    'v${AppConstants.appVersion}',
+                                    style: AppTextStyles.bodySmall.copyWith(
+                                      color: AppColors.neutralDarkerGrey,
                                     ),
                                   ),
                                 ],

@@ -4,12 +4,23 @@ class AppConstants {
   static const String appName = 'CO2 Exist';
   static const String appVersion = '1.0.0';
 
-  // API endpoints (placeholder for future Supabase integration)
-  static const String baseUrl = 'https://hvgxicauyuchtqcdmdgp.supabase.co';
-  static const String apiKey =
-      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh2Z3hpY2F1eXVjaHRxY2RtZGdwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDYyNTI0NDgsImV4cCI6MjA2MTgyODQ0OH0.5C6hBjilmgfFdXk5RLZi6cfQBzkdFNahEffXmda3vVA';
-  static const String serviceApiKey =
-      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh2Z3hpY2F1eXVjaHRxY2RtZGdwIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc0NjI1MjQ0OCwiZXhwIjoyMDYxODI4NDQ4fQ.xgXF-qAIBROKRuYt1F27ql0SWULXKRIzU0wjPrwPSHs'; // Add your service role key from Supabase settings
+  // Environment (set via --dart-define-from-file)
+  static const String env = String.fromEnvironment('ENV', defaultValue: 'production');
+  static bool get isStaging => env == 'staging';
+
+  // Supabase config (overridden via --dart-define-from-file=config/staging.json)
+  static const String baseUrl = String.fromEnvironment(
+    'SUPABASE_URL',
+    defaultValue: 'https://hvgxicauyuchtqcdmdgp.supabase.co',
+  );
+  static const String apiKey = String.fromEnvironment(
+    'SUPABASE_ANON_KEY',
+    defaultValue: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh2Z3hpY2F1eXVjaHRxY2RtZGdwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDYyNTI0NDgsImV4cCI6MjA2MTgyODQ0OH0.5C6hBjilmgfFdXk5RLZi6cfQBzkdFNahEffXmda3vVA',
+  );
+  static const String serviceApiKey = String.fromEnvironment(
+    'SUPABASE_SERVICE_KEY',
+    defaultValue: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh2Z3hpY2F1eXVjaHRxY2RtZGdwIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc0NjI1MjQ0OCwiZXhwIjoyMDYxODI4NDQ4fQ.xgXF-qAIBROKRuYt1F27ql0SWULXKRIzU0wjPrwPSHs',
+  );
 
   // Storage keys
   static const String tokenKey = 'auth_token';

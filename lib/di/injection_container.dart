@@ -1,6 +1,7 @@
 import 'package:coexist_app_portal/features/app_configs/di/app_config_injection.dart';
 import 'package:coexist_app_portal/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:coexist_app_portal/features/events/di/events_injection.dart';
+import 'package:coexist_app_portal/features/pickups/di/pickups_injection.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:dio/dio.dart';
 import 'package:get_it/get_it.dart';
@@ -38,6 +39,8 @@ Future<void> init() async {
   _initAppConfigDependencies();
 
   _initEventDependencies();
+
+  _initPickupDependencies();
 }
 
 /// Initialize Auth dependencies
@@ -77,4 +80,8 @@ void _initAppConfigDependencies() {
 void _initEventDependencies() {
   // Register Event-related dependencies here
   registerEventDependencies(sl);
+}
+
+void _initPickupDependencies() {
+  registerPickupDependencies(sl);
 }

@@ -14,10 +14,14 @@ import '../../features/auth/presentation/pages/set_new_password_page.dart';
 
 import '../../features/dashboard/presentation/widgets/dashboard_section.dart';
 import '../../features/dashboard/presentation/widgets/events_section.dart';
+import '../../features/dashboard/presentation/widgets/users_section.dart';
 
 import '../../features/events/presentation/pages/event_details_page.dart';
 import '../../features/events/presentation/widgets/web_form_section.dart';
 import '../../features/events/presentation/bloc/event_bloc.dart';
+
+import '../../features/pickups/presentation/bloc/pickup_bloc.dart';
+import '../../features/pickups/presentation/widgets/pickups_section.dart';
 
 /// Navigator keys
 final _rootNavigatorKey = GlobalKey<NavigatorState>();
@@ -32,6 +36,8 @@ class AppRoutes {
 
   static const dashboard = '/dashboard';
   static const dashboardEvents = '/dashboard/events';
+  static const dashboardPickups = '/dashboard/pickups';
+  static const dashboardUsers = '/dashboard/users';
 
   static const createEvent = '/create-event';
 
@@ -90,6 +96,7 @@ final GoRouter appRouter = GoRouter(
         return MultiBlocProvider(
           providers: [
             BlocProvider<EventBloc>(create: (_) => di.sl<EventBloc>()),
+            BlocProvider<PickupBloc>(create: (_) => di.sl<PickupBloc>()),
           ],
           child: DashboardPage(child: child), // ✅ IMPORTANT FIX
         );
@@ -111,6 +118,14 @@ final GoRouter appRouter = GoRouter(
         GoRoute(
           path: AppRoutes.dashboardEvents,
           builder: (context, state) => const EventsSection(),
+        ),
+        GoRoute(
+          path: AppRoutes.dashboardPickups,
+          builder: (context, state) => const PickupsSection(),
+        ),
+        GoRoute(
+          path: AppRoutes.dashboardUsers,
+          builder: (context, state) => const UsersSection(),
         ),
       ],
     ),

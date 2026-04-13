@@ -1,3 +1,4 @@
+import 'package:coexist_app_portal/core/constants/app_constants.dart';
 import 'package:coexist_app_portal/core/utils/app_router.dart';
 import 'package:coexist_app_portal/di/injection_container.dart' as di;
 import 'package:coexist_app_portal/features/auth/domain/repositories/auth_repository.dart';
@@ -49,12 +50,16 @@ class _DashboardPageState extends State<DashboardPage> {
   String _currentMenu(BuildContext context) {
     final location = GoRouterState.of(context).uri.toString();
     if (location.startsWith(AppRoutes.dashboardEvents)) return 'Events';
+    if (location.startsWith(AppRoutes.dashboardPickups)) return 'Pickups';
+    if (location.startsWith(AppRoutes.dashboardUsers)) return 'Users';
     return 'Dashboard';
   }
 
   void _onMenuTap(String label, bool isInDrawer) {
     if (label == 'Dashboard') context.go(AppRoutes.dashboard);
     if (label == 'Events') context.go(AppRoutes.dashboardEvents);
+    if (label == 'Pickups') context.go(AppRoutes.dashboardPickups);
+    if (label == 'Users') context.go(AppRoutes.dashboardUsers);
     if (label == 'Logout') _showLogoutDialog(context, _displayName ?? 'User');
 
     if (isInDrawer) Navigator.of(context).pop();
@@ -165,8 +170,39 @@ class _DashboardPageState extends State<DashboardPage> {
               selected == 'Events',
               () => _onMenuTap('Events', isInDrawer),
             ),
+            _navItem(
+              Icons.local_shipping,
+              'Pickups',
+              selected == 'Pickups',
+              () => _onMenuTap('Pickups', isInDrawer),
+            ),
+            _navItem(
+              Icons.people,
+              'Users',
+              selected == 'Users',
+              () => _onMenuTap('Users', isInDrawer),
+            ),
 
             const Spacer(),
+
+            const Divider(height: 1),
+            const SizedBox(height: 8),
+            Text(
+              'v${AppConstants.appVersion}',
+              style: AppTextStyles.bodySmall.copyWith(
+                color: AppColors.neutralDarkerGrey,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              AppConstants.baseUrl.replaceFirst('https://', ''),
+              style: AppTextStyles.bodySmall.copyWith(
+                color: AppColors.neutralDarkerGrey,
+                fontSize: 10,
+              ),
+              overflow: TextOverflow.ellipsis,
+            ),
+            const SizedBox(height: 12),
 
             _navItem(
               Icons.logout,
