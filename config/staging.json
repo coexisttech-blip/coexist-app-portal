@@ -1,5 +1,6 @@
 {
   "ENV": "staging",
   "SUPABASE_URL": "https://iunetwvtaqvwuevqgqum.supabase.co",
-  "SUPABASE_ANON_KEY": "sb_publishable_oFTAM2pIUmGQhjA9SjCBMw_Pt2Hcp77"
+  "SUPABASE_ANON_KEY": "sb_publishable_oFTAM2pIUmGQhjA9SjCBMw_Pt2Hcp77",
+  "SUPABASE_SERVICE_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml1bmV0d3Z0YXF2d3VldnFncXVtIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3NTU0MTc2NiwiZXhwIjoyMDkxMTE3NzY2fQ.1r4VX8I6FwMAlMXnNI5wyLy2IhvYpQjuJrimgHK5esk"
 }
