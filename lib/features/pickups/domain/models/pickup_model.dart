@@ -2,6 +2,8 @@ import 'package:equatable/equatable.dart';
 
 enum PickupStatus {
   requested,
+  scheduled,
+  approved,
   assigned,
   completed,
   cancelled;
@@ -10,6 +12,10 @@ enum PickupStatus {
     switch (this) {
       case PickupStatus.requested:
         return 'Requested';
+      case PickupStatus.scheduled:
+        return 'Scheduled';
+      case PickupStatus.approved:
+        return 'Approved';
       case PickupStatus.assigned:
         return 'Assigned';
       case PickupStatus.completed:
@@ -21,6 +27,10 @@ enum PickupStatus {
 
   static PickupStatus fromString(String value) {
     switch (value.toLowerCase()) {
+      case 'scheduled':
+        return PickupStatus.scheduled;
+      case 'approved':
+        return PickupStatus.approved;
       case 'assigned':
         return PickupStatus.assigned;
       case 'completed':
@@ -39,12 +49,18 @@ class PickupModel extends Equatable {
   final String userName;
   final String userPhone;
   final String address;
+  final String? wasteType;
+  final double? weight;
+  final DateTime? pickupDate;
+  final String timeSlot;
   final DateTime scheduledDate;
   final String scheduledTime;
   final PickupStatus status;
   final String? assignedTo;
   final String? assignedDriverName;
   final String? notes;
+  final String? proofImageUrl;
+  final String? proofImageUrl2;
   final int rescheduleCount;
   final DateTime? rescheduledAt;
   final DateTime createdAt;
@@ -56,12 +72,18 @@ class PickupModel extends Equatable {
     this.userName = '',
     this.userPhone = '',
     required this.address,
+    this.wasteType,
+    this.weight,
+    this.pickupDate,
+    this.timeSlot = '',
     required this.scheduledDate,
     required this.scheduledTime,
     this.status = PickupStatus.requested,
     this.assignedTo,
     this.assignedDriverName,
     this.notes,
+    this.proofImageUrl,
+    this.proofImageUrl2,
     this.rescheduleCount = 0,
     this.rescheduledAt,
     required this.createdAt,
@@ -69,6 +91,8 @@ class PickupModel extends Equatable {
   });
 
   bool get isPending => status == PickupStatus.requested;
+  bool get isScheduled => status == PickupStatus.scheduled;
+  bool get isApproved => status == PickupStatus.approved;
   bool get isAssigned => status == PickupStatus.assigned;
   bool get isCompleted => status == PickupStatus.completed;
   bool get isCancelled => status == PickupStatus.cancelled;
@@ -81,14 +105,22 @@ class PickupModel extends Equatable {
       userName: data['user_name'] ?? '',
       userPhone: data['user_phone'] ?? '',
       address: data['address'] ?? '',
+      wasteType: data['waste_type'],
+      weight: data['weight'] != null ? (data['weight'] as num).toDouble() : null,
+      pickupDate: data['pickup_date'] != null
+          ? DateTime.parse(data['pickup_date'].toString())
+          : null,
+      timeSlot: data['time_slot'] ?? '',
       scheduledDate: data['scheduled_date'] != null
           ? DateTime.parse(data['scheduled_date'].toString())
           : DateTime.now(),
-      scheduledTime: data['time_slot'] ?? data['scheduled_time'] ?? '',
+      scheduledTime: data['scheduled_time'] ?? '',
       status: PickupStatus.fromString(data['status'] ?? 'requested'),
       assignedTo: data['assigned_to'],
       assignedDriverName: data['assigned_driver_name'],
       notes: data['notes'],
+      proofImageUrl: data['proof_image_url'],
+      proofImageUrl2: data['proof_image_url_2'],
       rescheduleCount: data['reschedule_count'] ?? 0,
       rescheduledAt: data['rescheduled_at'] != null
           ? DateTime.parse(data['rescheduled_at'].toString())
@@ -126,12 +158,18 @@ class PickupModel extends Equatable {
     String? userName,
     String? userPhone,
     String? address,
+    String? wasteType,
+    double? weight,
+    DateTime? pickupDate,
+    String? timeSlot,
     DateTime? scheduledDate,
     String? scheduledTime,
     PickupStatus? status,
     String? assignedTo,
     String? assignedDriverName,
     String? notes,
+    String? proofImageUrl,
+    String? proofImageUrl2,
     int? rescheduleCount,
     DateTime? rescheduledAt,
     DateTime? createdAt,
@@ -143,12 +181,18 @@ class PickupModel extends Equatable {
       userName: userName ?? this.userName,
       userPhone: userPhone ?? this.userPhone,
       address: address ?? this.address,
+      wasteType: wasteType ?? this.wasteType,
+      weight: weight ?? this.weight,
+      pickupDate: pickupDate ?? this.pickupDate,
+      timeSlot: timeSlot ?? this.timeSlot,
       scheduledDate: scheduledDate ?? this.scheduledDate,
       scheduledTime: scheduledTime ?? this.scheduledTime,
       status: status ?? this.status,
       assignedTo: assignedTo ?? this.assignedTo,
       assignedDriverName: assignedDriverName ?? this.assignedDriverName,
       notes: notes ?? this.notes,
+      proofImageUrl: proofImageUrl ?? this.proofImageUrl,
+      proofImageUrl2: proofImageUrl2 ?? this.proofImageUrl2,
       rescheduleCount: rescheduleCount ?? this.rescheduleCount,
       rescheduledAt: rescheduledAt ?? this.rescheduledAt,
       createdAt: createdAt ?? this.createdAt,
@@ -163,12 +207,18 @@ class PickupModel extends Equatable {
         userName,
         userPhone,
         address,
+        wasteType,
+        weight,
+        pickupDate,
+        timeSlot,
         scheduledDate,
         scheduledTime,
         status,
         assignedTo,
         assignedDriverName,
         notes,
+        proofImageUrl,
+        proofImageUrl2,
         rescheduleCount,
         rescheduledAt,
         createdAt,

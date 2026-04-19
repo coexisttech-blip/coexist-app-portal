@@ -48,6 +48,34 @@ class FetchDriversEvent extends PickupEvent {
   const FetchDriversEvent();
 }
 
+class AcceptAndAssignPickupEvent extends PickupEvent {
+  final String pickupId;
+  final DateTime scheduledDate;
+  final String scheduledTime;
+  final String driverId;
+  final String driverName;
+
+  const AcceptAndAssignPickupEvent({
+    required this.pickupId,
+    required this.scheduledDate,
+    required this.scheduledTime,
+    required this.driverId,
+    required this.driverName,
+  });
+
+  @override
+  List<Object?> get props => [pickupId, scheduledDate, scheduledTime, driverId, driverName];
+}
+
+class ApprovePickupEvent extends PickupEvent {
+  final String pickupId;
+
+  const ApprovePickupEvent({required this.pickupId});
+
+  @override
+  List<Object?> get props => [pickupId];
+}
+
 class AssignPickupEvent extends PickupEvent {
   final String pickupId;
   final String driverId;

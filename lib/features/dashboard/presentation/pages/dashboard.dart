@@ -52,6 +52,7 @@ class _DashboardPageState extends State<DashboardPage> {
     if (location.startsWith(AppRoutes.dashboardEvents)) return 'Events';
     if (location.startsWith(AppRoutes.dashboardPickups)) return 'Pickups';
     if (location.startsWith(AppRoutes.dashboardUsers)) return 'Users';
+    if (location.startsWith(AppRoutes.dashboardCategories)) return 'Categories';
     return 'Dashboard';
   }
 
@@ -60,6 +61,7 @@ class _DashboardPageState extends State<DashboardPage> {
     if (label == 'Events') context.go(AppRoutes.dashboardEvents);
     if (label == 'Pickups') context.go(AppRoutes.dashboardPickups);
     if (label == 'Users') context.go(AppRoutes.dashboardUsers);
+    if (label == 'Categories') context.go(AppRoutes.dashboardCategories);
     if (label == 'Logout') _showLogoutDialog(context, _displayName ?? 'User');
 
     if (isInDrawer) Navigator.of(context).pop();
@@ -181,6 +183,12 @@ class _DashboardPageState extends State<DashboardPage> {
               'Users',
               selected == 'Users',
               () => _onMenuTap('Users', isInDrawer),
+            ),
+            _navItem(
+              Icons.category,
+              'Categories',
+              selected == 'Categories',
+              () => _onMenuTap('Categories', isInDrawer),
             ),
 
             const Spacer(),

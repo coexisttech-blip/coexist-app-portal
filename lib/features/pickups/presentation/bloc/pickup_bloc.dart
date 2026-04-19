@@ -14,6 +14,8 @@ class PickupBloc extends Bloc<PickupEvent, PickupState> {
     on<FetchPickupsByStatusEvent>(_onFetchPickupsByStatus);
     on<FetchPickupCountsEvent>(_onFetchPickupCounts);
     on<FetchDriversEvent>(_onFetchDrivers);
+    on<AcceptAndAssignPickupEvent>(_onAcceptAndAssignPickup);
+    on<ApprovePickupEvent>(_onApprovePickup);
     on<AssignPickupEvent>(_onAssignPickup);
     on<ReschedulePickupEvent>(_onReschedulePickup);
     on<UpdateScheduleEvent>(_onUpdateSchedule);
@@ -78,6 +80,46 @@ class PickupBloc extends Bloc<PickupEvent, PickupState> {
       emit(DriversLoaded(drivers: drivers));
     } catch (e) {
       emit(PickupError(message: 'Failed to fetch drivers: ${e.toString()}'));
+    }
+  }
+
+  Future<void> _onAcceptAndAssignPickup(
+    AcceptAndAssignPickupEvent event,
+    Emitter<PickupState> emit,
+  ) async {
+    emit(const PickupLoading());
+    try {
+      final success = await _pickupRepository.acceptAndAssignPickup(
+        event.pickupId,
+        event.scheduledDate,
+        event.scheduledTime,
+        event.driverId,
+        event.driverName,
+      );
+      if (success) {
+        emit(const PickupActionSuccess(message: 'Pickup accepted and assigned'));
+      } else {
+        emit(const PickupError(message: 'Failed to accept pickup'));
+      }
+    } catch (e) {
+      emit(PickupError(message: 'Failed to accept pickup: ${e.toString()}'));
+    }
+  }
+
+  Future<void> _onApprovePickup(
+    ApprovePickupEvent event,
+    Emitter<PickupState> emit,
+  ) async {
+    emit(const PickupLoading());
+    try {
+      final success = await _pickupRepository.approvePickup(event.pickupId);
+      if (success) {
+        emit(const PickupActionSuccess(message: 'Pickup approved'));
+      } else {
+        emit(const PickupError(message: 'Failed to approve pickup'));
+      }
+    } catch (e) {
+      emit(PickupError(message: 'Failed to approve pickup: ${e.toString()}'));
     }
   }
 

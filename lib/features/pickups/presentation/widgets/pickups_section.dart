@@ -24,6 +24,8 @@ class _PickupsSectionState extends State<PickupsSection>
   static const _tabs = <PickupStatus?>[
     null,
     PickupStatus.requested,
+    PickupStatus.scheduled,
+    PickupStatus.approved,
     PickupStatus.assigned,
     PickupStatus.completed,
     PickupStatus.cancelled,
@@ -31,7 +33,9 @@ class _PickupsSectionState extends State<PickupsSection>
 
   static const _tabLabels = [
     'All',
-    'Pending',
+    'Requested',
+    'Scheduled',
+    'Approved',
     'Assigned',
     'Completed',
     'Cancelled',
@@ -206,6 +210,10 @@ class _PickupsSectionState extends State<PickupsSection>
     switch (status) {
       case PickupStatus.requested:
         return Colors.orange;
+      case PickupStatus.scheduled:
+        return Colors.indigo;
+      case PickupStatus.approved:
+        return Colors.teal;
       case PickupStatus.assigned:
         return Colors.blue;
       case PickupStatus.completed:
@@ -219,6 +227,10 @@ class _PickupsSectionState extends State<PickupsSection>
     switch (status) {
       case PickupStatus.requested:
         return Icons.schedule;
+      case PickupStatus.scheduled:
+        return Icons.event;
+      case PickupStatus.approved:
+        return Icons.thumb_up;
       case PickupStatus.assigned:
         return Icons.person_pin;
       case PickupStatus.completed:
@@ -383,9 +395,216 @@ class _PickupsSectionState extends State<PickupsSection>
     );
   }
 
+  void _showAcceptAndAssignDialog(BuildContext context, PickupModel pickup) {
+    final bloc = context.read<PickupBloc>();
+    late void Function(PickupState) listener;
+    final subscription = bloc.stream.listen(null);
+    listener = (state) {
+      if (state is DriversLoaded) {
+        subscription.cancel();
+        _drivers = state.drivers;
+        if (context.mounted) {
+          _showAcceptAndAssignDialogWithDrivers(context, pickup, state.drivers);
+        }
+      } else if (state is PickupError) {
+        subscription.cancel();
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(state.message), backgroundColor: Colors.red),
+          );
+        }
+      }
+    };
+    subscription.onData(listener);
+
+    if (_drivers.isNotEmpty) {
+      subscription.cancel();
+      _showAcceptAndAssignDialogWithDrivers(context, pickup, _drivers);
+    } else {
+      bloc.add(const FetchDriversEvent());
+    }
+  }
+
+  void _showAcceptAndAssignDialogWithDrivers(
+    BuildContext context,
+    PickupModel pickup,
+    List<UserProfileModel> drivers,
+  ) {
+    DateTime selectedDate = pickup.pickupDate ?? pickup.scheduledDate;
+    String selectedTime = _matchTimeSlot(
+      pickup.timeSlot.isNotEmpty ? pickup.timeSlot : pickup.scheduledTime,
+    );
+    UserProfileModel? selectedDriver;
+
+    showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDialogState) => AlertDialog(
+          title: const Text('Accept & Assign Pickup'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Date
+                const Text(
+                  'Scheduled Date',
+                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+                ),
+                const SizedBox(height: 8),
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: const Icon(Icons.calendar_today),
+                  title: Text(DateFormatter.formatDate(selectedDate)),
+                  trailing: const Icon(Icons.edit, size: 18),
+                  onTap: () async {
+                    final date = await showDatePicker(
+                      context: ctx,
+                      initialDate: selectedDate,
+                      firstDate: DateTime.now(),
+                      lastDate: DateTime.now().add(const Duration(days: 365)),
+                    );
+                    if (date != null) {
+                      setDialogState(() => selectedDate = date);
+                    }
+                  },
+                ),
+                const SizedBox(height: 12),
+
+                // Time slot
+                const Text(
+                  'Time Slot',
+                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+                ),
+                const SizedBox(height: 8),
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  decoration: BoxDecoration(
+                    border: Border.all(color: Colors.grey.shade400),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: DropdownButtonHideUnderline(
+                    child: DropdownButton<String>(
+                      value: selectedTime,
+                      isExpanded: true,
+                      icon: const Icon(Icons.access_time, color: AppColors.primaryGreen),
+                      items: _timeSlots.map((slot) {
+                        return DropdownMenuItem(value: slot, child: Text(slot));
+                      }).toList(),
+                      onChanged: (value) {
+                        if (value != null) {
+                          setDialogState(() => selectedTime = value);
+                        }
+                      },
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+
+                // Driver
+                const Text(
+                  'Assign Driver',
+                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+                ),
+                const SizedBox(height: 8),
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  decoration: BoxDecoration(
+                    border: Border.all(color: Colors.grey.shade400),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: DropdownButtonHideUnderline(
+                    child: DropdownButton<UserProfileModel>(
+                      value: selectedDriver,
+                      hint: const Text('Choose a driver...'),
+                      isExpanded: true,
+                      items: drivers.map((driver) {
+                        return DropdownMenuItem(
+                          value: driver,
+                          child: Row(
+                            children: [
+                              CircleAvatar(
+                                radius: 14,
+                                backgroundColor: AppColors.primaryGreen,
+                                child: Text(
+                                  driver.name.isNotEmpty
+                                      ? driver.name[0].toUpperCase()
+                                      : '?',
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Text(driver.name, style: const TextStyle(fontSize: 14)),
+                                    Text(
+                                      driver.role,
+                                      style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      }).toList(),
+                      onChanged: (value) {
+                        setDialogState(() => selectedDriver = value);
+                      },
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              onPressed: selectedDriver == null
+                  ? null
+                  : () {
+                      context.read<PickupBloc>().add(AcceptAndAssignPickupEvent(
+                        pickupId: pickup.id,
+                        scheduledDate: selectedDate,
+                        scheduledTime: selectedTime,
+                        driverId: selectedDriver!.id,
+                        driverName: selectedDriver!.name,
+                      ));
+                      Navigator.of(ctx).pop();
+                    },
+              child: const Text('Accept & Assign'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  static const _timeSlots = ['Morning', 'Afternoon', 'Evening'];
+
+  String _matchTimeSlot(String time) {
+    final lower = time.toLowerCase().trim();
+    for (final slot in _timeSlots) {
+      if (slot.toLowerCase() == lower) return slot;
+    }
+    return _timeSlots.first;
+  }
+
   void _showUpdateDateTimeDialog(BuildContext context, PickupModel pickup) {
-    DateTime selectedDate = pickup.scheduledDate;
-    final timeController = TextEditingController(text: pickup.scheduledTime);
+    DateTime selectedDate = pickup.pickupDate ?? pickup.scheduledDate;
+    String selectedTime = _matchTimeSlot(pickup.timeSlot.isNotEmpty ? pickup.timeSlot : pickup.scheduledTime);
 
     showDialog(
       context: context,
@@ -413,12 +632,30 @@ class _PickupsSectionState extends State<PickupsSection>
                 },
               ),
               const SizedBox(height: 12),
-              TextField(
-                controller: timeController,
-                decoration: const InputDecoration(
-                  labelText: 'Time (e.g. 10:00 AM)',
-                  border: OutlineInputBorder(),
-                  prefixIcon: Icon(Icons.access_time),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                decoration: BoxDecoration(
+                  border: Border.all(color: Colors.grey.shade400),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: DropdownButtonHideUnderline(
+                  child: DropdownButton<String>(
+                    value: selectedTime,
+                    isExpanded: true,
+                    icon: const Icon(Icons.access_time, color: AppColors.primaryGreen),
+                    items: _timeSlots.map((slot) {
+                      return DropdownMenuItem(
+                        value: slot,
+                        child: Text(slot),
+                      );
+                    }).toList(),
+                    onChanged: (value) {
+                      if (value != null) {
+                        setDialogState(() => selectedTime = value);
+                      }
+                    },
+                  ),
                 ),
               ),
             ],
@@ -433,7 +670,7 @@ class _PickupsSectionState extends State<PickupsSection>
                 context.read<PickupBloc>().add(UpdateScheduleEvent(
                   pickupId: pickup.id,
                   newDate: selectedDate,
-                  newTime: timeController.text.trim(),
+                  newTime: selectedTime,
                 ));
                 Navigator.of(ctx).pop();
               },
@@ -447,7 +684,7 @@ class _PickupsSectionState extends State<PickupsSection>
 
   void _showRescheduleDialog(BuildContext context, PickupModel pickup) {
     DateTime selectedDate = pickup.scheduledDate;
-    final timeController = TextEditingController(text: pickup.scheduledTime);
+    String selectedTime = _matchTimeSlot(pickup.scheduledTime);
 
     showDialog(
       context: context,
@@ -475,12 +712,30 @@ class _PickupsSectionState extends State<PickupsSection>
                 },
               ),
               const SizedBox(height: 12),
-              TextField(
-                controller: timeController,
-                decoration: const InputDecoration(
-                  labelText: 'Time (e.g. 10:00 AM)',
-                  border: OutlineInputBorder(),
-                  prefixIcon: Icon(Icons.access_time),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                decoration: BoxDecoration(
+                  border: Border.all(color: Colors.grey.shade400),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: DropdownButtonHideUnderline(
+                  child: DropdownButton<String>(
+                    value: selectedTime,
+                    isExpanded: true,
+                    icon: const Icon(Icons.access_time, color: AppColors.primaryGreen),
+                    items: _timeSlots.map((slot) {
+                      return DropdownMenuItem(
+                        value: slot,
+                        child: Text(slot),
+                      );
+                    }).toList(),
+                    onChanged: (value) {
+                      if (value != null) {
+                        setDialogState(() => selectedTime = value);
+                      }
+                    },
+                  ),
                 ),
               ),
             ],
@@ -495,7 +750,7 @@ class _PickupsSectionState extends State<PickupsSection>
                 context.read<PickupBloc>().add(ReschedulePickupEvent(
                   pickupId: pickup.id,
                   newDate: selectedDate,
-                  newTime: timeController.text.trim(),
+                  newTime: selectedTime,
                 ));
                 Navigator.of(ctx).pop();
               },
@@ -541,16 +796,71 @@ class _PickupsSectionState extends State<PickupsSection>
     switch (pickup.status) {
       case PickupStatus.requested:
         actions.add(_actionButton(
-          'Accept',
+          'Accept & Assign',
           Icons.check_circle_outline,
           AppColors.primaryGreen,
-          () => _showAcceptDialog(context, pickup),
+          () => _showAcceptAndAssignDialog(context, pickup),
         ));
         actions.add(_actionButton(
-          'Update Date/Time',
+          'Schedule',
           Icons.edit_calendar,
-          Colors.blue,
+          Colors.indigo,
           () => _showUpdateDateTimeDialog(context, pickup),
+        ));
+        actions.add(_actionButton(
+          'Cancel',
+          Icons.cancel_outlined,
+          Colors.red,
+          () => _confirmAction(
+            context,
+            'Cancel Pickup',
+            'Are you sure you want to cancel this pickup?',
+            () => context.read<PickupBloc>().add(
+              CancelPickupEvent(pickupId: pickup.id),
+            ),
+          ),
+        ));
+        break;
+      case PickupStatus.scheduled:
+        actions.add(_actionButton(
+          'Approve',
+          Icons.thumb_up_outlined,
+          Colors.teal,
+          () => _confirmAction(
+            context,
+            'Approve Pickup',
+            'Approve this scheduled pickup?',
+            () => context.read<PickupBloc>().add(
+              ApprovePickupEvent(pickupId: pickup.id),
+            ),
+          ),
+        ));
+        actions.add(_actionButton(
+          'Reschedule',
+          Icons.edit_calendar,
+          Colors.orange,
+          () => _showRescheduleDialog(context, pickup),
+        ));
+        actions.add(_actionButton(
+          'Cancel',
+          Icons.cancel_outlined,
+          Colors.red,
+          () => _confirmAction(
+            context,
+            'Cancel Pickup',
+            'Are you sure you want to cancel this pickup?',
+            () => context.read<PickupBloc>().add(
+              CancelPickupEvent(pickupId: pickup.id),
+            ),
+          ),
+        ));
+        break;
+      case PickupStatus.approved:
+        actions.add(_actionButton(
+          'Assign Driver',
+          Icons.person_add,
+          Colors.blue,
+          () => _showAcceptDialog(context, pickup),
         ));
         actions.add(_actionButton(
           'Cancel',
@@ -606,6 +916,41 @@ class _PickupsSectionState extends State<PickupsSection>
     }
 
     return actions;
+  }
+
+  void _showImageDialog(BuildContext context, String imageUrl) {
+    showDialog(
+      context: context,
+      builder: (ctx) => Dialog(
+        backgroundColor: Colors.transparent,
+        child: Stack(
+          alignment: Alignment.topRight,
+          children: [
+            ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              child: Image.network(
+                imageUrl,
+                fit: BoxFit.contain,
+                errorBuilder: (_, __, ___) => Container(
+                  width: 300,
+                  height: 300,
+                  color: Colors.grey[200],
+                  child: const Icon(Icons.broken_image, size: 48, color: Colors.grey),
+                ),
+              ),
+            ),
+            IconButton(
+              onPressed: () => Navigator.of(ctx).pop(),
+              icon: const CircleAvatar(
+                radius: 16,
+                backgroundColor: Colors.black54,
+                child: Icon(Icons.close, color: Colors.white, size: 18),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   Widget _actionButton(
@@ -756,6 +1101,16 @@ class _PickupsSectionState extends State<PickupsSection>
             const Divider(height: 1),
             const SizedBox(height: 12),
 
+            // Weight
+            if (pickup.weight != null) ...[
+              _detailItem(
+                Icons.scale,
+                'Weight',
+                '${pickup.weight!.toStringAsFixed(1)} kg${pickup.wasteType != null ? ' (${pickup.wasteType})' : ''}',
+              ),
+              const SizedBox(height: 12),
+            ],
+
             // Details row
             Row(
               children: [
@@ -767,22 +1122,50 @@ class _PickupsSectionState extends State<PickupsSection>
                     pickup.address,
                   ),
                 ),
-                Expanded(
-                  child: _detailItem(
-                    Icons.calendar_today,
-                    'Date',
-                    DateFormatter.formatDate(pickup.scheduledDate),
+                if (pickup.isPending) ...[
+                  Expanded(
+                    child: _detailItem(
+                      Icons.history,
+                      'Requested On',
+                      DateFormatter.formatDate(pickup.createdAt),
+                    ),
                   ),
-                ),
-                Expanded(
-                  child: _detailItem(
-                    Icons.access_time,
-                    'Time',
-                    pickup.scheduledTime.isNotEmpty
-                        ? pickup.scheduledTime
-                        : '--',
+                  Expanded(
+                    child: _detailItem(
+                      Icons.calendar_today,
+                      'Requested Pickup Date',
+                      pickup.pickupDate != null
+                          ? DateFormatter.formatDate(pickup.pickupDate!)
+                          : '--',
+                    ),
                   ),
-                ),
+                  Expanded(
+                    child: _detailItem(
+                      Icons.access_time,
+                      'Requested Pickup Time',
+                      pickup.timeSlot.isNotEmpty
+                          ? pickup.timeSlot
+                          : '--',
+                    ),
+                  ),
+                ] else ...[
+                  Expanded(
+                    child: _detailItem(
+                      Icons.calendar_today,
+                      'Scheduled Pickup Date',
+                      DateFormatter.formatDate(pickup.scheduledDate),
+                    ),
+                  ),
+                  Expanded(
+                    child: _detailItem(
+                      Icons.access_time,
+                      'Scheduled Pickup Time',
+                      pickup.scheduledTime.isNotEmpty
+                          ? pickup.scheduledTime
+                          : '--',
+                    ),
+                  ),
+                ],
               ],
             ),
 
@@ -803,6 +1186,32 @@ class _PickupsSectionState extends State<PickupsSection>
               _detailItem(Icons.notes, 'Notes', pickup.notes!),
             ],
 
+            // Proof photos (completed pickups)
+            if (pickup.isCompleted &&
+                (pickup.proofImageUrl != null || pickup.proofImageUrl2 != null)) ...[
+              const SizedBox(height: 12),
+              const Divider(height: 1),
+              const SizedBox(height: 12),
+              const Text(
+                'Proof Photos',
+                style: TextStyle(
+                  fontSize: 10,
+                  color: AppColors.neutralDarkerGrey,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  if (pickup.proofImageUrl != null)
+                    _proofThumbnail(context, pickup.proofImageUrl!),
+                  if (pickup.proofImageUrl != null && pickup.proofImageUrl2 != null)
+                    const SizedBox(width: 8),
+                  if (pickup.proofImageUrl2 != null)
+                    _proofThumbnail(context, pickup.proofImageUrl2!),
+                ],
+              ),
+            ],
+
             // Action buttons
             if (_buildActions(context, pickup).isNotEmpty) ...[
               const SizedBox(height: 12),
@@ -816,6 +1225,27 @@ class _PickupsSectionState extends State<PickupsSection>
               ),
             ],
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _proofThumbnail(BuildContext context, String imageUrl) {
+    return GestureDetector(
+      onTap: () => _showImageDialog(context, imageUrl),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(8),
+        child: Image.network(
+          imageUrl,
+          width: 80,
+          height: 80,
+          fit: BoxFit.cover,
+          errorBuilder: (_, __, ___) => Container(
+            width: 80,
+            height: 80,
+            color: Colors.grey[200],
+            child: const Icon(Icons.broken_image, color: Colors.grey, size: 20),
+          ),
         ),
       ),
     );

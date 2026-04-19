@@ -2,6 +2,7 @@ import 'package:coexist_app_portal/features/app_configs/di/app_config_injection.
 import 'package:coexist_app_portal/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:coexist_app_portal/features/events/di/events_injection.dart';
 import 'package:coexist_app_portal/features/pickups/di/pickups_injection.dart';
+import 'package:coexist_app_portal/features/waste_categories/di/waste_categories_injection.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:dio/dio.dart';
 import 'package:get_it/get_it.dart';
@@ -41,6 +42,8 @@ Future<void> init() async {
   _initEventDependencies();
 
   _initPickupDependencies();
+
+  _initWasteCategoryDependencies();
 }
 
 /// Initialize Auth dependencies
@@ -84,4 +87,8 @@ void _initEventDependencies() {
 
 void _initPickupDependencies() {
   registerPickupDependencies(sl);
+}
+
+void _initWasteCategoryDependencies() {
+  registerWasteCategoryDependencies(sl);
 }

@@ -23,6 +23,11 @@ import '../../features/events/presentation/bloc/event_bloc.dart';
 import '../../features/pickups/presentation/bloc/pickup_bloc.dart';
 import '../../features/pickups/presentation/widgets/pickups_section.dart';
 
+import '../../features/waste_categories/presentation/bloc/waste_category_bloc.dart';
+import '../../features/waste_categories/presentation/widgets/waste_categories_section.dart';
+import '../../features/waste_categories/presentation/widgets/waste_category_detail_page.dart';
+import '../../features/waste_categories/presentation/widgets/waste_category_create_page.dart';
+
 /// Navigator keys
 final _rootNavigatorKey = GlobalKey<NavigatorState>();
 final _shellNavigatorKey = GlobalKey<NavigatorState>();
@@ -38,6 +43,8 @@ class AppRoutes {
   static const dashboardEvents = '/dashboard/events';
   static const dashboardPickups = '/dashboard/pickups';
   static const dashboardUsers = '/dashboard/users';
+  static const dashboardCategories = '/dashboard/categories';
+  static const dashboardCategoriesCreate = '/dashboard/categories/create';
 
   static const createEvent = '/create-event';
 
@@ -97,6 +104,7 @@ final GoRouter appRouter = GoRouter(
           providers: [
             BlocProvider<EventBloc>(create: (_) => di.sl<EventBloc>()),
             BlocProvider<PickupBloc>(create: (_) => di.sl<PickupBloc>()),
+            BlocProvider<WasteCategoryBloc>(create: (_) => di.sl<WasteCategoryBloc>()),
           ],
           child: DashboardPage(child: child), // ✅ IMPORTANT FIX
         );
@@ -126,6 +134,21 @@ final GoRouter appRouter = GoRouter(
         GoRoute(
           path: AppRoutes.dashboardUsers,
           builder: (context, state) => const UsersSection(),
+        ),
+        GoRoute(
+          path: AppRoutes.dashboardCategories,
+          builder: (context, state) => const WasteCategoriesSection(),
+        ),
+        GoRoute(
+          path: AppRoutes.dashboardCategoriesCreate,
+          builder: (context, state) => const WasteCategoryCreatePage(),
+        ),
+        GoRoute(
+          path: '/dashboard/categories/:id',
+          builder: (context, state) {
+            final categoryId = state.pathParameters['id']!;
+            return WasteCategoryDetailPage(categoryId: categoryId);
+          },
         ),
       ],
     ),

@@ -18,6 +18,16 @@ abstract class PickupRepository {
 
   Future<PickupModel?> getPickupById(String pickupId);
 
+  Future<bool> approvePickup(String pickupId);
+
+  Future<bool> acceptAndAssignPickup(
+    String pickupId,
+    DateTime scheduledDate,
+    String scheduledTime,
+    String driverId,
+    String driverName,
+  );
+
   Future<bool> assignPickup(String pickupId, String driverId, String driverName);
 
   Future<bool> reschedulePickup(

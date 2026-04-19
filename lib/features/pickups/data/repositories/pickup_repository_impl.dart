@@ -135,6 +135,45 @@ class PickupRepositoryImpl implements PickupRepository {
   }
 
   @override
+  Future<bool> acceptAndAssignPickup(
+    String pickupId,
+    DateTime scheduledDate,
+    String scheduledTime,
+    String driverId,
+    String driverName,
+  ) async {
+    try {
+      await _supabaseClient.from('waste_pickups').update({
+        'scheduled_date': scheduledDate.toIso8601String(),
+        'scheduled_time': scheduledTime,
+        'status': PickupStatus.assigned.label,
+        'assigned_to': driverId,
+        'driver_id': driverId,
+        'assigned_driver_name': driverName,
+        'updated_at': DateTime.now().toIso8601String(),
+      }).eq('id', pickupId);
+      return true;
+    } catch (e) {
+      print('Error accepting and assigning pickup: $e');
+      return false;
+    }
+  }
+
+  @override
+  Future<bool> approvePickup(String pickupId) async {
+    try {
+      await _supabaseClient.from('waste_pickups').update({
+        'status': PickupStatus.approved.label,
+        'updated_at': DateTime.now().toIso8601String(),
+      }).eq('id', pickupId);
+      return true;
+    } catch (e) {
+      print('Error approving pickup: $e');
+      return false;
+    }
+  }
+
+  @override
   Future<bool> assignPickup(
     String pickupId,
     String driverId,
@@ -144,6 +183,7 @@ class PickupRepositoryImpl implements PickupRepository {
       await _supabaseClient.from('waste_pickups').update({
         'status': PickupStatus.assigned.label,
         'assigned_to': driverId,
+        'driver_id': driverId,
         'assigned_driver_name': driverName,
         'updated_at': DateTime.now().toIso8601String(),
       }).eq('id', pickupId);
@@ -189,6 +229,7 @@ class PickupRepositoryImpl implements PickupRepository {
       await _supabaseClient.from('waste_pickups').update({
         'scheduled_date': newDate.toIso8601String(),
         'scheduled_time': newTime,
+        'status': PickupStatus.scheduled.label,
         'updated_at': DateTime.now().toIso8601String(),
       }).eq('id', pickupId);
       return true;
