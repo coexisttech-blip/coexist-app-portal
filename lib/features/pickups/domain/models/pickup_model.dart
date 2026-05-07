@@ -1,5 +1,29 @@
 import 'package:equatable/equatable.dart';
 
+// Pickup state transitions (see pickups_section.dart for UI wiring):
+//
+// ```mermaid
+// stateDiagram-v2
+//     [*] --> requested
+//
+//     requested --> scheduled: Schedule
+//     requested --> assigned: Accept & Assign
+//     requested --> cancelled: Cancel
+//
+//     scheduled --> approved: Approve
+//     scheduled --> scheduled: Reschedule (count++)
+//     scheduled --> cancelled: Cancel
+//
+//     approved --> assigned: Assign Driver
+//     approved --> cancelled: Cancel
+//
+//     assigned --> completed: Complete
+//     assigned --> assigned: Reschedule (count++)
+//     assigned --> cancelled: Cancel
+//
+//     completed --> [*]
+//     cancelled --> [*]
+// ```
 enum PickupStatus {
   requested,
   scheduled,
