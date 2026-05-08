@@ -53,6 +53,7 @@ class _DashboardPageState extends State<DashboardPage> {
     if (location.startsWith(AppRoutes.dashboardPickups)) return 'Pickups';
     if (location.startsWith(AppRoutes.dashboardUsers)) return 'Users';
     if (location.startsWith(AppRoutes.dashboardCategories)) return 'Categories';
+    if (location.startsWith(AppRoutes.dashboardTreePlanting)) return 'Plant a Tree';
     return 'Dashboard';
   }
 
@@ -62,6 +63,7 @@ class _DashboardPageState extends State<DashboardPage> {
     if (label == 'Pickups') context.go(AppRoutes.dashboardPickups);
     if (label == 'Users') context.go(AppRoutes.dashboardUsers);
     if (label == 'Categories') context.go(AppRoutes.dashboardCategories);
+    if (label == 'Plant a Tree') context.go(AppRoutes.dashboardTreePlanting);
     if (label == 'Logout') _showLogoutDialog(context, _displayName ?? 'User');
 
     if (isInDrawer) Navigator.of(context).pop();
@@ -189,6 +191,12 @@ class _DashboardPageState extends State<DashboardPage> {
               'Categories',
               selected == 'Categories',
               () => _onMenuTap('Categories', isInDrawer),
+            ),
+            _navItem(
+              Icons.park,
+              'Plant a Tree',
+              selected == 'Plant a Tree',
+              () => _onMenuTap('Plant a Tree', isInDrawer),
             ),
 
             const Spacer(),

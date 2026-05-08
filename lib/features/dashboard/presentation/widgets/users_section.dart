@@ -20,7 +20,7 @@ class _UsersSectionState extends State<UsersSection> {
   String _selectedRole = 'All';
   final _searchController = TextEditingController();
 
-  static const _roles = ['All', 'admin', 'user', 'volunteer'];
+  static const _roles = ['All', 'admin', 'user', 'volunteer', 'driver'];
 
   @override
   void initState() {
@@ -101,6 +101,8 @@ class _UsersSectionState extends State<UsersSection> {
         return Colors.purple;
       case 'volunteer':
         return AppColors.primaryGreen;
+      case 'driver':
+        return Colors.orange;
       default:
         return Colors.blue;
     }

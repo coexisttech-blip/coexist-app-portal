@@ -89,6 +89,8 @@ class PickupModel extends Equatable {
   final DateTime? rescheduledAt;
   final DateTime createdAt;
   final DateTime updatedAt;
+  final Map<String, dynamic>? categoryWeights;
+  final String? rejectedMaterialImageUrl;
 
   const PickupModel({
     required this.id,
@@ -112,6 +114,8 @@ class PickupModel extends Equatable {
     this.rescheduledAt,
     required this.createdAt,
     required this.updatedAt,
+    this.categoryWeights,
+    this.rejectedMaterialImageUrl,
   });
 
   bool get isPending => status == PickupStatus.requested;
@@ -155,6 +159,10 @@ class PickupModel extends Equatable {
       updatedAt: data['updated_at'] != null
           ? DateTime.parse(data['updated_at'].toString())
           : DateTime.now(),
+      categoryWeights: data['category_weights'] is Map
+          ? Map<String, dynamic>.from(data['category_weights'] as Map)
+          : null,
+      rejectedMaterialImageUrl: data['rejected_material_image_url'],
     );
   }
 
@@ -198,6 +206,8 @@ class PickupModel extends Equatable {
     DateTime? rescheduledAt,
     DateTime? createdAt,
     DateTime? updatedAt,
+    Map<String, dynamic>? categoryWeights,
+    String? rejectedMaterialImageUrl,
   }) {
     return PickupModel(
       id: id ?? this.id,
@@ -221,6 +231,9 @@ class PickupModel extends Equatable {
       rescheduledAt: rescheduledAt ?? this.rescheduledAt,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
+      categoryWeights: categoryWeights ?? this.categoryWeights,
+      rejectedMaterialImageUrl:
+          rejectedMaterialImageUrl ?? this.rejectedMaterialImageUrl,
     );
   }
 
@@ -247,5 +260,7 @@ class PickupModel extends Equatable {
         rescheduledAt,
         createdAt,
         updatedAt,
+        categoryWeights,
+        rejectedMaterialImageUrl,
       ];
 }

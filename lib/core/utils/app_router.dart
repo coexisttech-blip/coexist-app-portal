@@ -28,6 +28,9 @@ import '../../features/waste_categories/presentation/widgets/waste_categories_se
 import '../../features/waste_categories/presentation/widgets/waste_category_detail_page.dart';
 import '../../features/waste_categories/presentation/widgets/waste_category_create_page.dart';
 
+import '../../features/tree_planting/presentation/bloc/tree_planting_bloc.dart';
+import '../../features/tree_planting/presentation/widgets/tree_planting_section.dart';
+
 /// Navigator keys
 final _rootNavigatorKey = GlobalKey<NavigatorState>();
 final _shellNavigatorKey = GlobalKey<NavigatorState>();
@@ -45,6 +48,7 @@ class AppRoutes {
   static const dashboardUsers = '/dashboard/users';
   static const dashboardCategories = '/dashboard/categories';
   static const dashboardCategoriesCreate = '/dashboard/categories/create';
+  static const dashboardTreePlanting = '/dashboard/trees';
 
   static const createEvent = '/create-event';
 
@@ -105,6 +109,7 @@ final GoRouter appRouter = GoRouter(
             BlocProvider<EventBloc>(create: (_) => di.sl<EventBloc>()),
             BlocProvider<PickupBloc>(create: (_) => di.sl<PickupBloc>()),
             BlocProvider<WasteCategoryBloc>(create: (_) => di.sl<WasteCategoryBloc>()),
+            BlocProvider<TreePlantingBloc>(create: (_) => di.sl<TreePlantingBloc>()),
           ],
           child: DashboardPage(child: child), // ✅ IMPORTANT FIX
         );
@@ -149,6 +154,10 @@ final GoRouter appRouter = GoRouter(
             final categoryId = state.pathParameters['id']!;
             return WasteCategoryDetailPage(categoryId: categoryId);
           },
+        ),
+        GoRoute(
+          path: AppRoutes.dashboardTreePlanting,
+          builder: (context, state) => const TreePlantingSection(),
         ),
       ],
     ),

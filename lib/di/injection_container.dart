@@ -2,6 +2,7 @@ import 'package:coexist_app_portal/features/app_configs/di/app_config_injection.
 import 'package:coexist_app_portal/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:coexist_app_portal/features/events/di/events_injection.dart';
 import 'package:coexist_app_portal/features/pickups/di/pickups_injection.dart';
+import 'package:coexist_app_portal/features/tree_planting/di/tree_planting_injection.dart';
 import 'package:coexist_app_portal/features/waste_categories/di/waste_categories_injection.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:dio/dio.dart';
@@ -44,6 +45,8 @@ Future<void> init() async {
   _initPickupDependencies();
 
   _initWasteCategoryDependencies();
+
+  _initTreePlantingDependencies();
 }
 
 /// Initialize Auth dependencies
@@ -91,4 +94,8 @@ void _initPickupDependencies() {
 
 void _initWasteCategoryDependencies() {
   registerWasteCategoryDependencies(sl);
+}
+
+void _initTreePlantingDependencies() {
+  registerTreePlantingDependencies(sl);
 }

@@ -1106,7 +1106,7 @@ class _PickupsSectionState extends State<PickupsSection>
               _detailItem(
                 Icons.scale,
                 'Weight',
-                '${pickup.weight!.toStringAsFixed(1)} kg${pickup.wasteType != null ? ' (${pickup.wasteType})' : ''}',
+                _formatPickupWeight(pickup),
               ),
               const SizedBox(height: 12),
             ],
@@ -1186,28 +1186,63 @@ class _PickupsSectionState extends State<PickupsSection>
               _detailItem(Icons.notes, 'Notes', pickup.notes!),
             ],
 
-            // Proof photos (completed pickups)
+            // Proof photos + optional rejected material side-by-side (completed pickups)
             if (pickup.isCompleted &&
-                (pickup.proofImageUrl != null || pickup.proofImageUrl2 != null)) ...[
+                (pickup.proofImageUrl != null ||
+                    pickup.proofImageUrl2 != null ||
+                    pickup.rejectedMaterialImageUrl != null)) ...[
               const SizedBox(height: 12),
               const Divider(height: 1),
               const SizedBox(height: 12),
-              const Text(
-                'Proof Photos',
-                style: TextStyle(
-                  fontSize: 10,
-                  color: AppColors.neutralDarkerGrey,
-                ),
-              ),
-              const SizedBox(height: 8),
               Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  if (pickup.proofImageUrl != null)
-                    _proofThumbnail(context, pickup.proofImageUrl!),
-                  if (pickup.proofImageUrl != null && pickup.proofImageUrl2 != null)
-                    const SizedBox(width: 8),
-                  if (pickup.proofImageUrl2 != null)
-                    _proofThumbnail(context, pickup.proofImageUrl2!),
+                  if (pickup.proofImageUrl != null ||
+                      pickup.proofImageUrl2 != null)
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Proof Photos',
+                          style: TextStyle(
+                            fontSize: 10,
+                            color: AppColors.neutralDarkerGrey,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Row(
+                          children: [
+                            if (pickup.proofImageUrl != null)
+                              _proofThumbnail(context, pickup.proofImageUrl!),
+                            if (pickup.proofImageUrl != null &&
+                                pickup.proofImageUrl2 != null)
+                              const SizedBox(width: 8),
+                            if (pickup.proofImageUrl2 != null)
+                              _proofThumbnail(context, pickup.proofImageUrl2!),
+                          ],
+                        ),
+                      ],
+                    ),
+                  if ((pickup.proofImageUrl != null ||
+                          pickup.proofImageUrl2 != null) &&
+                      pickup.rejectedMaterialImageUrl != null)
+                    const SizedBox(width: 24),
+                  if (pickup.rejectedMaterialImageUrl != null)
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Rejected Material',
+                          style: TextStyle(
+                            fontSize: 10,
+                            color: AppColors.neutralDarkerGrey,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        _proofThumbnail(
+                            context, pickup.rejectedMaterialImageUrl!),
+                      ],
+                    ),
                 ],
               ),
             ],
@@ -1249,6 +1284,34 @@ class _PickupsSectionState extends State<PickupsSection>
         ),
       ),
     );
+  }
+
+  String _formatPickupWeight(PickupModel pickup) {
+    final kgPart = pickup.weight != null
+        ? '${pickup.weight!.toStringAsFixed(1)} kg'
+        : '';
+
+    final breakdown = <String>[];
+    final cw = pickup.categoryWeights;
+    if (cw != null) {
+      for (final entry in cw.values) {
+        if (entry is Map) {
+          final name = entry['name'];
+          final unit = entry['unit'];
+          final value = entry['value'];
+          if (name == null || value == null) continue;
+          if (unit == 'kg') continue; // already counted in pickup.weight
+          final v = value is num ? value : num.tryParse('$value');
+          if (v == null) continue;
+          breakdown.add('${v % 1 == 0 ? v.toInt() : v} ${unit ?? ''} $name'.trim());
+        }
+      }
+    }
+
+    final wasteTypeSuffix =
+        pickup.wasteType != null ? ' (${pickup.wasteType})' : '';
+    final extras = breakdown.isEmpty ? '' : ' + ${breakdown.join(', ')}';
+    return '$kgPart$extras$wasteTypeSuffix';
   }
 
   Widget _detailItem(IconData icon, String label, String value) {

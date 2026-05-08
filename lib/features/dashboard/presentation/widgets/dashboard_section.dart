@@ -3,7 +3,10 @@ import 'package:coexist_app_portal/core/theme/app_colors.dart';
 import 'package:coexist_app_portal/core/theme/app_text_styles.dart';
 import 'package:coexist_app_portal/di/injection_container.dart' as di;
 import 'package:coexist_app_portal/features/auth/domain/repositories/auth_repository.dart';
+import 'package:coexist_app_portal/core/utils/app_router.dart';
+import 'package:coexist_app_portal/features/dashboard/presentation/widgets/pickup_mis_section.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class DashboardSection extends StatefulWidget {
@@ -101,7 +104,8 @@ class _DashboardSectionState extends State<DashboardSection> {
 
   Widget _statCard(String title, int? value, IconData icon, Color color) {
     final display = value == null ? '--' : value.toString();
-    return Card(
+    final route = _routeForStat(title);
+    final card = Card(
       color: Colors.white,
       elevation: 2,
       child: Padding(
@@ -137,6 +141,20 @@ class _DashboardSectionState extends State<DashboardSection> {
         ),
       ),
     );
+    if (route == null) return card;
+    return InkWell(
+      borderRadius: BorderRadius.circular(8),
+      onTap: () => context.go(route),
+      child: card,
+    );
+  }
+
+  String? _routeForStat(String key) {
+    final k = key.toLowerCase();
+    if (k.contains('user')) return AppRoutes.dashboardUsers;
+    if (k.contains('tree')) return AppRoutes.dashboardTreePlanting;
+    if (k.contains('pickup')) return AppRoutes.dashboardPickups;
+    return null;
   }
 
   IconData _iconForStat(String key) {
@@ -199,38 +217,40 @@ class _DashboardSectionState extends State<DashboardSection> {
         );
       }
     }
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Hello, ${widget.name}',
-          style: AppTextStyles.h1.copyWith(
-            color: AppColors.primaryDarkGreen,
-            fontSize: widget.headingSize,
+    return SingleChildScrollView(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Hello, ${widget.name}',
+            style: AppTextStyles.h1.copyWith(
+              color: AppColors.primaryDarkGreen,
+              fontSize: widget.headingSize,
+            ),
           ),
-        ),
-        Text(
-          'Welcome to the COExist Portal Admin Dashboard.',
-          style: AppTextStyles.bodyLarge.copyWith(
-            fontSize: 12,
-            color: Colors.grey,
+          Text(
+            'Welcome to the COExist Portal Admin Dashboard.',
+            style: AppTextStyles.bodyLarge.copyWith(
+              fontSize: 12,
+              color: Colors.grey,
+            ),
           ),
-        ),
-        const SizedBox(height: 36),
-        // Stats
-        //
-        Text(
-          'Statistics',
-          style: AppTextStyles.bodyLarge.copyWith(
-            fontSize: 24,
-            fontWeight: FontWeight.bold,
-            color: AppColors.primaryDarkGreen,
+          const SizedBox(height: 36),
+          Text(
+            'Statistics',
+            style: AppTextStyles.bodyLarge.copyWith(
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+              color: AppColors.primaryDarkGreen,
+            ),
           ),
-        ),
-        const SizedBox(height: 18),
-        statsSection,
-        const SizedBox(height: 18),
-      ],
+          const SizedBox(height: 18),
+          statsSection,
+          const SizedBox(height: 36),
+          PickupMisSection(isWide: widget.isWide),
+          const SizedBox(height: 18),
+        ],
+      ),
     );
   }
 }
