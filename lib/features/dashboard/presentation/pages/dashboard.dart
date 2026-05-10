@@ -204,7 +204,7 @@ class _DashboardPageState extends State<DashboardPage> {
             const Divider(height: 1),
             const SizedBox(height: 8),
             Text(
-              'v${AppConstants.appVersion}',
+              'v${AppConstants.appVersion} • ${AppConstants.env}',
               style: AppTextStyles.bodySmall.copyWith(
                 color: AppColors.neutralDarkerGrey,
               ),

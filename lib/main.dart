@@ -11,6 +11,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_web_plugins/url_strategy.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' hide AuthState;
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
@@ -26,7 +27,18 @@ void main() async {
     DeviceOrientation.portraitDown,
   ]);
 
-  // Initialize Supabase
+  final packageInfo = await PackageInfo.fromPlatform();
+  AppConstants.appVersion = '${packageInfo.version}+${packageInfo.buildNumber}';
+
+  if (AppConstants.env.isEmpty ||
+      AppConstants.baseUrl.isEmpty ||
+      AppConstants.apiKey.isEmpty) {
+    throw StateError(
+      'App config missing. Build with --dart-define-from-file=config/<env>.json '
+      '(ENV, SUPABASE_URL and SUPABASE_ANON_KEY must be set).',
+    );
+  }
+
   await Supabase.initialize(
     url: AppConstants.baseUrl,
     anonKey: AppConstants.apiKey,

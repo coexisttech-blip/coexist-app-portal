@@ -60,3 +60,42 @@ Current features: `auth`, `events`, `app_configs`, `dashboard` (dashboard has pr
 ## Dart SDK
 
 Requires Dart SDK `^3.9.2`. Uses `flutter_lints` for analysis rules.
+
+## Environments & deployment
+
+Two environments live in parallel — staging and production — each backed by a separate Supabase project and a separate Netlify site. Env config is supplied at build time via `--dart-define-from-file=config/<env>.json` and read by `String.fromEnvironment(...)` in `lib/core/constants/app_constants.dart` (`ENV`, `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_KEY`).
+
+There are **no fallback values**. A build with no `--dart-define-from-file` flag will throw `StateError` at startup (`lib/main.dart`). This is deliberate — silently hitting the wrong project once cost real debugging time.
+
+Edge function calls (`account_service.dart`, `event_repository_impl.dart`) derive their URL + bearer from `AppConstants.baseUrl` / `AppConstants.apiKey` — never hardcode a project ref or anon key. The footer in `dashboard.dart` displays the env name and Supabase URL so the running env is visible at a glance.
+
+### Deploying to staging — read this before running `netlify deploy`
+
+Two foot-guns, both painful, both have bitten us:
+
+**1. `netlify deploy` re-runs the build by default and uses production config.**
+The checked-in `netlify.toml` hardcodes `flutter build web --dart-define-from-file=config/production.json` as its `command`. `netlify deploy` (and `netlify deploy --dir=build/web`) will run that command locally before uploading, silently overwriting your staging-built `build/web` with a production-built one. **You must pass `--no-build`** to deploy what you have on disk.
+
+**2. Flutter web's incremental build cache does not invalidate on `--dart-define-from-file` changes.**
+A build with `staging.json` after a build with `production.json` (or vice versa) reuses stale compiled artifacts and bakes in the *previous* env's URLs/keys. Always `flutter clean` between env switches.
+
+Correct staging deploy:
+
+```bash
+flutter clean && flutter pub get
+flutter build web --dart-define-from-file=config/staging.json
+
+# Verify the right project ref is baked in BEFORE uploading
+grep -c iunetwvtaqvwuevqgqum build/web/main.dart.js   # staging — should be > 0
+grep -c hvgxicauyuchtqcdmdgp build/web/main.dart.js   # prod    — should be 0
+
+netlify deploy --prod --no-build --dir=build/web \
+  --site=78ad8b33-aa41-46cb-b013-bf72c019bd47       # papaya-cassata-86434e (staging)
+
+# Verify the live deploy
+curl -s https://papaya-cassata-86434e.netlify.app/main.dart.js | grep -c iunetwvtaqvwuevqgqum
+```
+
+Production deploys can let `netlify.toml`'s build command run as-is (no `--no-build` needed), since it already targets production config.
+
+`--prod` here means *"make this the live deploy of that Netlify site"* — it does NOT cross environments. Deploying with `--prod --site=<staging-id>` updates the staging site only.

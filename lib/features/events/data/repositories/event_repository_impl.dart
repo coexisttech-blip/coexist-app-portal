@@ -1,5 +1,6 @@
 import 'dart:typed_data';
 
+import 'package:coexist_app_portal/core/constants/app_constants.dart';
 import 'package:coexist_app_portal/core/network/api_client.dart';
 import 'package:dio/dio.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -259,15 +260,13 @@ class EventRepositoryImpl implements EventRepository {
     // Set the specific authorization header for this API
     final options = Options(
       headers: {
-        'Authorization':
-            'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh2Z3hpY2F1eXVjaHRxY2RtZGdwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDYyNTI0NDgsImV4cCI6MjA2MTgyODQ0OH0.5C6hBjilmgfFdXk5RLZi6cfQBzkdFNahEffXmda3vVA',
+        'Authorization': 'Bearer ${AppConstants.apiKey}',
         'Content-Type': 'application/json',
       },
     );
-    // Make the API call
     try {
       await _apiClient.post(
-        'https://hvgxicauyuchtqcdmdgp.supabase.co/functions/v1/send-event-registration-email',
+        '${AppConstants.baseUrl}/functions/v1/send-event-registration-email',
         data: payload,
         options: options,
       );

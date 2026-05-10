@@ -1,19 +1,19 @@
+import 'package:coexist_app_portal/core/constants/app_constants.dart';
 import 'package:dio/dio.dart';
 
 class AccountService {
-  static const String _baseUrl = 'https://hvgxicauyuchtqcdmdgp.functions.supabase.co';
-  static const String _deleteAccountEndpoint = '/delete_account';
-  static const String _authToken = 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh2Z3hpY2F1eXVjaHRxY2RtZGdwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDYyNTI0NDgsImV4cCI6MjA2MTgyODQ0OH0.5C6hBjilmgfFdXk5RLZi6cfQBzkdFNahEffXmda3vVA';
+  static String get _deleteAccountUrl =>
+      '${AppConstants.baseUrl.replaceFirst('.supabase.co', '.functions.supabase.co')}/delete_account';
 
   static Future<bool> deleteAccount(String userId) async {
     try {
       final dio = Dio();
       final response = await dio.post(
-        '$_baseUrl$_deleteAccountEndpoint',
+        _deleteAccountUrl,
         options: Options(
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': _authToken,
+            'Authorization': 'Bearer ${AppConstants.apiKey}',
           },
         ),
         data: {'user_id': userId},

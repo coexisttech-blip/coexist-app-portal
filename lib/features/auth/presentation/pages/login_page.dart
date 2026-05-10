@@ -103,7 +103,7 @@ class _LoginPageState extends State<LoginPage> {
                                   ),
                                   const SizedBox(height: 12),
                                   Text(
-                                    'v${AppConstants.appVersion}',
+                                    'v${AppConstants.appVersion} • ${AppConstants.env}',
                                     style: AppTextStyles.bodySmall.copyWith(
                                       color: AppColors.neutralDarkerGrey,
                                     ),
