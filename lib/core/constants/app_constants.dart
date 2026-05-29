@@ -2,7 +2,7 @@
 class AppConstants {
   // App info
   static const String appName = 'CO2 Exist';
-  static const String appVersion = '1.1.0';
+  static const String appVersion = '1.2.0';
 
   // Environment (set via --dart-define-from-file)
   static const String env = String.fromEnvironment('ENV', defaultValue: 'production');
