@@ -177,26 +177,35 @@ class WasteCategoryRepositoryImpl implements WasteCategoryRepository {
     required double newRate,
   }) async {
     try {
-      // Close current rate
+      final today = DateTime.now().toIso8601String().split('T')[0];
+      final tomorrowStr = DateTime.now()
+          .add(const Duration(days: 1))
+          .toIso8601String()
+          .split('T')[0];
+
+      // 1. Close the current rate (if any) so only the new row is current.
+      //    Filter out the future-effective row we're about to upsert.
       await _supabaseClient
           .from('waste_category_rates')
           .update({
-            'effective_to':
-                DateTime.now().toIso8601String().split('T')[0],
+            'effective_to': today,
             'is_current': false,
           })
           .eq('category_id', categoryId)
-          .eq('is_current', true);
+          .eq('is_current', true)
+          .neq('effective_from', tomorrowStr);
 
-      // Insert new rate effective from tomorrow
-      final tomorrow =
-          DateTime.now().add(const Duration(days: 1));
-      await _supabaseClient.from('waste_category_rates').insert({
+      // 2. Upsert the new rate row keyed by (category_id, effective_from).
+      //    Lets the user click Update Rate multiple times in the same day —
+      //    later clicks overwrite the earlier same-day attempt instead of
+      //    failing with a unique-constraint conflict.
+      await _supabaseClient.from('waste_category_rates').upsert({
         'category_id': categoryId,
         'rate': newRate,
-        'effective_from': tomorrow.toIso8601String().split('T')[0],
+        'effective_from': tomorrowStr,
+        'effective_to': null,
         'is_current': true,
-      });
+      }, onConflict: 'category_id,effective_from');
 
       return true;
     } catch (e) {
