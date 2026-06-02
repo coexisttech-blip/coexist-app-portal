@@ -1101,12 +1101,27 @@ class _PickupsSectionState extends State<PickupsSection>
             const Divider(height: 1),
             const SizedBox(height: 12),
 
-            // Weight
-            if (pickup.weight != null) ...[
-              _detailItem(
-                Icons.scale,
-                'Weight',
-                _formatPickupWeight(pickup),
+            // Weights — Estimated (from pickup.weight) and Actual (driver-captured)
+            if (pickup.weight != null || pickup.actualWeight != null) ...[
+              Row(
+                children: [
+                  if (pickup.weight != null)
+                    Expanded(
+                      child: _detailItem(
+                        Icons.scale_outlined,
+                        'Estimated Weight',
+                        _formatPickupWeight(pickup),
+                      ),
+                    ),
+                  if (pickup.actualWeight != null)
+                    Expanded(
+                      child: _detailItem(
+                        Icons.scale,
+                        'Actual Weight',
+                        '${pickup.actualWeight!.toStringAsFixed(1)} kg',
+                      ),
+                    ),
+                ],
               ),
               const SizedBox(height: 12),
             ],
@@ -1119,7 +1134,7 @@ class _PickupsSectionState extends State<PickupsSection>
                   child: _detailItem(
                     Icons.location_on,
                     'Address',
-                    pickup.address,
+                    pickup.fullAddress.isNotEmpty ? pickup.fullAddress : pickup.address,
                   ),
                 ),
                 if (pickup.isPending) ...[

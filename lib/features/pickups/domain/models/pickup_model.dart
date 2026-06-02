@@ -91,6 +91,11 @@ class PickupModel extends Equatable {
   final DateTime updatedAt;
   final Map<String, dynamic>? categoryWeights;
   final String? rejectedMaterialImageUrl;
+  final double? actualWeight;
+  final String? flatNumber;
+  final String? buildingName;
+  final String? city;
+  final String? pincode;
 
   const PickupModel({
     required this.id,
@@ -116,7 +121,25 @@ class PickupModel extends Equatable {
     required this.updatedAt,
     this.categoryWeights,
     this.rejectedMaterialImageUrl,
+    this.actualWeight,
+    this.flatNumber,
+    this.buildingName,
+    this.city,
+    this.pincode,
   });
+
+  /// Composed full address: flat, building, address, city, pincode.
+  /// Strips out empty/missing parts so we don't render leading commas.
+  String get fullAddress {
+    final parts = <String>[
+      if (flatNumber != null && flatNumber!.trim().isNotEmpty) flatNumber!.trim(),
+      if (buildingName != null && buildingName!.trim().isNotEmpty) buildingName!.trim(),
+      if (address.trim().isNotEmpty) address.trim(),
+      if (city != null && city!.trim().isNotEmpty) city!.trim(),
+      if (pincode != null && pincode!.trim().isNotEmpty) pincode!.trim(),
+    ];
+    return parts.join(', ');
+  }
 
   bool get isPending => status == PickupStatus.requested;
   bool get isScheduled => status == PickupStatus.scheduled;
@@ -163,6 +186,13 @@ class PickupModel extends Equatable {
           ? Map<String, dynamic>.from(data['category_weights'] as Map)
           : null,
       rejectedMaterialImageUrl: data['rejected_material_image_url'],
+      actualWeight: data['actual_weight'] != null
+          ? (data['actual_weight'] as num).toDouble()
+          : null,
+      flatNumber: data['flat_number'],
+      buildingName: data['building_name'],
+      city: data['city'],
+      pincode: data['pincode'],
     );
   }
 
@@ -208,6 +238,11 @@ class PickupModel extends Equatable {
     DateTime? updatedAt,
     Map<String, dynamic>? categoryWeights,
     String? rejectedMaterialImageUrl,
+    double? actualWeight,
+    String? flatNumber,
+    String? buildingName,
+    String? city,
+    String? pincode,
   }) {
     return PickupModel(
       id: id ?? this.id,
@@ -234,6 +269,11 @@ class PickupModel extends Equatable {
       categoryWeights: categoryWeights ?? this.categoryWeights,
       rejectedMaterialImageUrl:
           rejectedMaterialImageUrl ?? this.rejectedMaterialImageUrl,
+      actualWeight: actualWeight ?? this.actualWeight,
+      flatNumber: flatNumber ?? this.flatNumber,
+      buildingName: buildingName ?? this.buildingName,
+      city: city ?? this.city,
+      pincode: pincode ?? this.pincode,
     );
   }
 
@@ -262,5 +302,10 @@ class PickupModel extends Equatable {
         updatedAt,
         categoryWeights,
         rejectedMaterialImageUrl,
+        actualWeight,
+        flatNumber,
+        buildingName,
+        city,
+        pincode,
       ];
 }

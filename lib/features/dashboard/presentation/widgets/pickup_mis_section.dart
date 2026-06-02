@@ -1,6 +1,9 @@
+import 'dart:convert';
+import 'dart:html' as html;
 import 'package:coexist_app_portal/core/theme/app_colors.dart';
 import 'package:coexist_app_portal/core/theme/app_text_styles.dart';
 import 'package:coexist_app_portal/core/utils/app_router.dart';
+import 'package:excel/excel.dart' as xl;
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
@@ -20,6 +23,7 @@ class PickupMisSection extends StatefulWidget {
 class _PickupMisSectionState extends State<PickupMisSection> {
   MisRange _range = MisRange.last30;
   bool _loading = true;
+  bool _exporting = false;
   String? _error;
 
   Map<String, int> _statusCounts = {};
@@ -96,6 +100,213 @@ class _PickupMisSectionState extends State<PickupMisSection> {
         _error = 'Failed to load MIS data: $e';
       });
     }
+  }
+
+  Future<void> _exportToExcel() async {
+    setState(() => _exporting = true);
+    try {
+      final start = _rangeStart();
+      final supabase = Supabase.instance.client;
+
+      // 1. Fetch pickups for the current range
+      var pickupQuery = supabase.from('waste_pickups').select();
+      if (start != null) {
+        pickupQuery = pickupQuery.gte('created_at', start.toIso8601String());
+      }
+      final pickupRows = ((await pickupQuery) as List).cast<Map<String, dynamic>>();
+
+      // 2. Fetch users so we can resolve user_id → name / phone / email
+      final userIds = pickupRows
+          .map((p) => p['user_id'])
+          .where((id) => id != null)
+          .toSet()
+          .toList();
+      final usersById = <String, Map<String, dynamic>>{};
+      if (userIds.isNotEmpty) {
+        final userRows = await supabase
+            .from('users')
+            .select('id, name, mobile_number, email')
+            .inFilter('id', userIds);
+        for (final u in (userRows as List)) {
+          final m = u as Map<String, dynamic>;
+          usersById[m['id'] as String] = m;
+        }
+      }
+
+      // 3. Build the spreadsheet
+      final excel = xl.Excel.createExcel();
+      excel.rename('Sheet1', 'Pickups');
+      final sheet = excel['Pickups'];
+
+      final headers = <String>[
+        'Pickup ID',
+        'Status',
+        'User Name',
+        'User Email',
+        'User Phone',
+        'Waste Type',
+        'Estimated Weight (kg)',
+        'Actual Weight (kg)',
+        'Category Breakdown',
+        'Money Earned (₹)',
+        'Requested Pickup Date',
+        'Scheduled Date',
+        'Scheduled Time',
+        'Time Slot',
+        'Flat',
+        'Building',
+        'Address',
+        'City',
+        'Pincode',
+        'Phone',
+        'Notes',
+        'Assigned Driver',
+        'Reschedule Count',
+        'Created At',
+        'Completed At',
+        'Proof Photo 1',
+        'Proof Photo 2',
+        'Rejected Material Photo',
+      ];
+      sheet.appendRow(headers.map<xl.CellValue?>((h) => xl.TextCellValue(h)).toList());
+
+      // Bold + light-grey background for header row
+      final headerStyle = xl.CellStyle(
+        bold: true,
+        backgroundColorHex: xl.ExcelColor.fromHexString('#E9F1EC'),
+        horizontalAlign: xl.HorizontalAlign.Center,
+      );
+      for (var col = 0; col < headers.length; col++) {
+        sheet
+            .cell(xl.CellIndex.indexByColumnRow(columnIndex: col, rowIndex: 0))
+            .cellStyle = headerStyle;
+      }
+
+      for (final p in pickupRows) {
+        final u = usersById[p['user_id']] ?? const {};
+        final row = <xl.CellValue?>[
+          _txt(p['id']),
+          _txt(p['status']),
+          _txt(u['name']),
+          _txt(u['email']),
+          _txt(u['mobile_number']),
+          _txt(p['waste_type']),
+          _num(p['weight']),
+          _num(p['actual_weight']),
+          _txt(_formatCategoryWeights(p['category_weights'])),
+          _num(p['money_earned']),
+          _date(p['pickup_date'], dateOnly: true),
+          _date(p['scheduled_date'], dateOnly: true),
+          _txt(p['scheduled_time']),
+          _txt(p['time_slot']),
+          _txt(p['flat_number']),
+          _txt(p['building_name']),
+          _txt(p['address']),
+          _txt(p['city']),
+          _txt(p['pincode']),
+          _txt(p['phone']),
+          _txt(p['notes']),
+          _txt(p['assigned_driver_name']),
+          _num(p['reschedule_count']),
+          _date(p['created_at']),
+          _date(p['completed_at']),
+          _link(p['proof_image_url'], 'View'),
+          _link(p['proof_image_url_2'], 'View'),
+          _link(p['rejected_material_image_url'], 'View'),
+        ];
+        sheet.appendRow(row);
+      }
+
+      // 4. Encode + download
+      final bytes = excel.encode();
+      if (bytes == null) {
+        throw Exception('Failed to encode spreadsheet');
+      }
+      final blob = html.Blob([bytes],
+          'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+      final url = html.Url.createObjectUrlFromBlob(blob);
+      final stamp = DateFormat('yyyyMMdd-HHmm').format(DateTime.now());
+      html.AnchorElement(href: url)
+        ..setAttribute('download', 'pickup-mis-$stamp.xlsx')
+        ..click();
+      html.Url.revokeObjectUrl(url);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Export failed: $e')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _exporting = false);
+    }
+  }
+
+  xl.CellValue? _txt(dynamic v) {
+    if (v == null) return null;
+    return xl.TextCellValue(v.toString());
+  }
+
+  /// Render a clickable hyperlink cell when the URL is non-empty.
+  /// Cell displays [label] (e.g. "View") and clicking opens the URL.
+  xl.CellValue? _link(dynamic url, String label) {
+    if (url == null) return null;
+    final s = url.toString();
+    if (s.isEmpty) return null;
+    // Escape any embedded quotes so the formula stays valid.
+    final safeUrl = s.replaceAll('"', '""');
+    return xl.FormulaCellValue('HYPERLINK("$safeUrl","$label")');
+  }
+
+  /// Parse a Postgres timestamp/date string and format it for display.
+  /// [dateOnly] = true → "01 Jun 2026". Otherwise → "01 Jun 2026 04:35".
+  xl.CellValue? _date(dynamic v, {bool dateOnly = false}) {
+    if (v == null) return null;
+    final s = v.toString();
+    if (s.isEmpty) return null;
+    final dt = DateTime.tryParse(s);
+    if (dt == null) return xl.TextCellValue(s);
+    final fmt = dateOnly
+        ? DateFormat('dd MMM yyyy')
+        : DateFormat('dd MMM yyyy HH:mm');
+    return xl.TextCellValue(fmt.format(dt.toLocal()));
+  }
+
+  xl.CellValue? _num(dynamic v) {
+    if (v == null) return null;
+    if (v is num) {
+      if (v is int) return xl.IntCellValue(v);
+      return xl.DoubleCellValue(v.toDouble());
+    }
+    final parsed = num.tryParse(v.toString());
+    if (parsed == null) return xl.TextCellValue(v.toString());
+    if (parsed is int) return xl.IntCellValue(parsed);
+    return xl.DoubleCellValue(parsed.toDouble());
+  }
+
+  String _formatCategoryWeights(dynamic raw) {
+    if (raw == null) return '';
+    Map<String, dynamic> map;
+    if (raw is Map) {
+      map = Map<String, dynamic>.from(raw);
+    } else if (raw is String) {
+      try {
+        map = Map<String, dynamic>.from(jsonDecode(raw) as Map);
+      } catch (_) {
+        return raw;
+      }
+    } else {
+      return raw.toString();
+    }
+    final parts = <String>[];
+    for (final entry in map.values) {
+      if (entry is! Map) continue;
+      final name = entry['name'];
+      final unit = entry['unit'];
+      final value = entry['value'];
+      if (name == null || value == null) continue;
+      parts.add('$value ${unit ?? ''} $name'.trim());
+    }
+    return parts.join(', ');
   }
 
   void _aggregate(List<Map<String, dynamic>> rows) {
@@ -258,6 +469,21 @@ class _PickupMisSectionState extends State<PickupMisSection> {
           tooltip: 'Refresh',
           icon: const Icon(Icons.refresh),
           onPressed: _load,
+        ),
+        const SizedBox(width: 4),
+        TextButton.icon(
+          onPressed: _exporting ? null : _exportToExcel,
+          icon: _exporting
+              ? const SizedBox(
+                  width: 14,
+                  height: 14,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              : const Icon(Icons.download, size: 18),
+          label: Text(_exporting ? 'Exporting…' : 'Export Excel'),
+          style: TextButton.styleFrom(
+            foregroundColor: AppColors.primaryGreen,
+          ),
         ),
       ],
     );
