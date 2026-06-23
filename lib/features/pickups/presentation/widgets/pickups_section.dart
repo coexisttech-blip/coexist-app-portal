@@ -1113,6 +1113,7 @@ class _PickupsSectionState extends State<PickupsSection>
                         Icons.scale_outlined,
                         'Estimated Weight',
                         _formatPickupWeight(pickup),
+                        maxLines: 6,
                       ),
                     ),
                   if (pickup.actualWeight != null)
@@ -1322,35 +1323,41 @@ class _PickupsSectionState extends State<PickupsSection>
     );
   }
 
+  /// Estimated weight broken down per material (one line each) from
+  /// category_weights, e.g.:
+  ///   Hard Plastic: 5.0 kg
+  ///   Paper: 2.0 kg
+  /// Falls back to the combined total + waste type for older pickups that
+  /// have no per-category breakdown.
   String _formatPickupWeight(PickupModel pickup) {
-    final kgPart = pickup.weight != null
-        ? '${pickup.weight!.toStringAsFixed(1)} kg'
-        : '';
-
-    final breakdown = <String>[];
     final cw = pickup.categoryWeights;
-    if (cw != null) {
+    if (cw != null && cw.isNotEmpty) {
+      final lines = <String>[];
       for (final entry in cw.values) {
-        if (entry is Map) {
-          final name = entry['name'];
-          final unit = entry['unit'];
-          final value = entry['value'];
-          if (name == null || value == null) continue;
-          if (unit == 'kg') continue; // already counted in pickup.weight
-          final v = value is num ? value : num.tryParse('$value');
-          if (v == null) continue;
-          breakdown.add('${v % 1 == 0 ? v.toInt() : v} ${unit ?? ''} $name'.trim());
-        }
+        if (entry is! Map) continue;
+        final name = entry['name'];
+        final unit = entry['unit'] ?? 'kg';
+        final value = entry['value'];
+        if (name == null || value == null) continue;
+        final v = value is num ? value : num.tryParse('$value');
+        if (v == null) continue;
+        final vStr = v % 1 == 0 ? v.toInt().toString() : v.toStringAsFixed(1);
+        lines.add('$name: $vStr $unit');
       }
+      if (lines.isNotEmpty) return lines.join('\n');
     }
 
+    // Fallback: single combined total + waste type
+    final kgPart = pickup.weight != null
+        ? '${pickup.weight!.toStringAsFixed(1)} kg'
+        : '--';
     final wasteTypeSuffix =
         pickup.wasteType != null ? ' (${pickup.wasteType})' : '';
-    final extras = breakdown.isEmpty ? '' : ' + ${breakdown.join(', ')}';
-    return '$kgPart$extras$wasteTypeSuffix';
+    return '$kgPart$wasteTypeSuffix';
   }
 
-  Widget _detailItem(IconData icon, String label, String value) {
+  Widget _detailItem(IconData icon, String label, String value,
+      {int maxLines = 2}) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -1379,7 +1386,7 @@ class _PickupsSectionState extends State<PickupsSection>
                 style: AppTextStyles.bodySmall.copyWith(
                   fontWeight: FontWeight.w600,
                 ),
-                maxLines: 2,
+                maxLines: maxLines,
                 overflow: TextOverflow.ellipsis,
               ),
             ],
