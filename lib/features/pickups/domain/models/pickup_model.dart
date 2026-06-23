@@ -96,6 +96,8 @@ class PickupModel extends Equatable {
   final String? buildingName;
   final String? city;
   final String? pincode;
+  final int? moneyEarned;
+  final DateTime? completedAt;
 
   const PickupModel({
     required this.id,
@@ -126,6 +128,8 @@ class PickupModel extends Equatable {
     this.buildingName,
     this.city,
     this.pincode,
+    this.moneyEarned,
+    this.completedAt,
   });
 
   /// Composed full address: flat, building, address, city, pincode.
@@ -193,6 +197,12 @@ class PickupModel extends Equatable {
       buildingName: data['building_name'],
       city: data['city'],
       pincode: data['pincode'],
+      moneyEarned: data['money_earned'] != null
+          ? (data['money_earned'] as num).toInt()
+          : null,
+      completedAt: data['completed_at'] != null
+          ? DateTime.parse(data['completed_at'].toString())
+          : null,
     );
   }
 
@@ -243,6 +253,8 @@ class PickupModel extends Equatable {
     String? buildingName,
     String? city,
     String? pincode,
+    int? moneyEarned,
+    DateTime? completedAt,
   }) {
     return PickupModel(
       id: id ?? this.id,
@@ -274,6 +286,8 @@ class PickupModel extends Equatable {
       buildingName: buildingName ?? this.buildingName,
       city: city ?? this.city,
       pincode: pincode ?? this.pincode,
+      moneyEarned: moneyEarned ?? this.moneyEarned,
+      completedAt: completedAt ?? this.completedAt,
     );
   }
 
@@ -307,5 +321,7 @@ class PickupModel extends Equatable {
         buildingName,
         city,
         pincode,
+        moneyEarned,
+        completedAt,
       ];
 }

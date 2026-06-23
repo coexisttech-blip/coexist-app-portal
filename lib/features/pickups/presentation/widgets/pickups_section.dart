@@ -1102,7 +1102,9 @@ class _PickupsSectionState extends State<PickupsSection>
             const SizedBox(height: 12),
 
             // Weights — Estimated (from pickup.weight) and Actual (driver-captured)
-            if (pickup.weight != null || pickup.actualWeight != null) ...[
+            if (pickup.weight != null ||
+                pickup.actualWeight != null ||
+                pickup.moneyEarned != null) ...[
               Row(
                 children: [
                   if (pickup.weight != null)
@@ -1121,7 +1123,26 @@ class _PickupsSectionState extends State<PickupsSection>
                         '${pickup.actualWeight!.toStringAsFixed(1)} kg',
                       ),
                     ),
+                  if (pickup.moneyEarned != null)
+                    Expanded(
+                      child: _detailItem(
+                        Icons.currency_rupee,
+                        'Amount Earned',
+                        '₹${pickup.moneyEarned}',
+                      ),
+                    ),
                 ],
+              ),
+              const SizedBox(height: 12),
+            ],
+
+            // Completed timestamp (only when truly stamped; older rows have
+            // a NULL completed_at and intentionally show nothing here).
+            if (pickup.isCompleted && pickup.completedAt != null) ...[
+              _detailItem(
+                Icons.check_circle_outline,
+                'Completed On',
+                DateFormatter.formatDateTime12(pickup.completedAt!),
               ),
               const SizedBox(height: 12),
             ],

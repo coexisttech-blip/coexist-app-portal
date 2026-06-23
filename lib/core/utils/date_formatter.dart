@@ -21,7 +21,13 @@ class DateFormatter {
   static String formatDateTime(DateTime date) {
     return DateFormat('MMM dd, yyyy HH:mm').format(date);
   }
-  
+
+  /// Format a (possibly UTC) timestamp to local 12-hour date+time
+  /// (e.g., Jun 23, 2026 · 04:45 PM)
+  static String formatDateTime12(DateTime date) {
+    return DateFormat('MMM dd, yyyy · hh:mm a').format(date.toLocal());
+  }
+
   /// Format date to relative time (e.g., 2 hours ago, Yesterday, etc.)
   static String formatRelativeTime(DateTime date) {
     final now = DateTime.now();
