@@ -1104,6 +1104,7 @@ class _PickupsSectionState extends State<PickupsSection>
             // Weights — Estimated (from pickup.weight) and Actual (driver-captured)
             if (pickup.weight != null ||
                 pickup.actualWeight != null ||
+                pickup.actualCategoryWeights != null ||
                 pickup.moneyEarned != null) ...[
               Row(
                 children: [
@@ -1116,12 +1117,14 @@ class _PickupsSectionState extends State<PickupsSection>
                         maxLines: 6,
                       ),
                     ),
-                  if (pickup.actualWeight != null)
+                  if (pickup.actualWeight != null ||
+                      pickup.actualCategoryWeights != null)
                     Expanded(
                       child: _detailItem(
                         Icons.scale,
                         'Actual Weight',
-                        '${pickup.actualWeight!.toStringAsFixed(1)} kg',
+                        _formatActualWeight(pickup),
+                        maxLines: 6,
                       ),
                     ),
                   if (pickup.moneyEarned != null)
@@ -1354,6 +1357,30 @@ class _PickupsSectionState extends State<PickupsSection>
     final wasteTypeSuffix =
         pickup.wasteType != null ? ' (${pickup.wasteType})' : '';
     return '$kgPart$wasteTypeSuffix';
+  }
+
+  /// Actual weight broken down per material from actual_category_weights
+  /// (captured by the driver). Falls back to the single actual total.
+  String _formatActualWeight(PickupModel pickup) {
+    final acw = pickup.actualCategoryWeights;
+    if (acw != null && acw.isNotEmpty) {
+      final lines = <String>[];
+      for (final entry in acw.values) {
+        if (entry is! Map) continue;
+        final name = entry['name'];
+        final unit = entry['unit'] ?? 'kg';
+        final value = entry['value'];
+        if (name == null || value == null) continue;
+        final v = value is num ? value : num.tryParse('$value');
+        if (v == null) continue;
+        final vStr = v % 1 == 0 ? v.toInt().toString() : v.toStringAsFixed(1);
+        lines.add('$name: $vStr $unit');
+      }
+      if (lines.isNotEmpty) return lines.join('\n');
+    }
+    return pickup.actualWeight != null
+        ? '${pickup.actualWeight!.toStringAsFixed(1)} kg'
+        : '--';
   }
 
   Widget _detailItem(IconData icon, String label, String value,

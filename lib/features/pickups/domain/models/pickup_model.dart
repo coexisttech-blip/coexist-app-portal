@@ -90,6 +90,7 @@ class PickupModel extends Equatable {
   final DateTime createdAt;
   final DateTime updatedAt;
   final Map<String, dynamic>? categoryWeights;
+  final Map<String, dynamic>? actualCategoryWeights;
   final String? rejectedMaterialImageUrl;
   final double? actualWeight;
   final String? flatNumber;
@@ -122,6 +123,7 @@ class PickupModel extends Equatable {
     required this.createdAt,
     required this.updatedAt,
     this.categoryWeights,
+    this.actualCategoryWeights,
     this.rejectedMaterialImageUrl,
     this.actualWeight,
     this.flatNumber,
@@ -186,6 +188,9 @@ class PickupModel extends Equatable {
       updatedAt: data['updated_at'] != null
           ? DateTime.parse(data['updated_at'].toString())
           : DateTime.now(),
+      actualCategoryWeights: data['actual_category_weights'] is Map
+          ? Map<String, dynamic>.from(data['actual_category_weights'] as Map)
+          : null,
       categoryWeights: data['category_weights'] is Map
           ? Map<String, dynamic>.from(data['category_weights'] as Map)
           : null,
@@ -247,6 +252,7 @@ class PickupModel extends Equatable {
     DateTime? createdAt,
     DateTime? updatedAt,
     Map<String, dynamic>? categoryWeights,
+    Map<String, dynamic>? actualCategoryWeights,
     String? rejectedMaterialImageUrl,
     double? actualWeight,
     String? flatNumber,
@@ -279,6 +285,8 @@ class PickupModel extends Equatable {
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       categoryWeights: categoryWeights ?? this.categoryWeights,
+      actualCategoryWeights:
+          actualCategoryWeights ?? this.actualCategoryWeights,
       rejectedMaterialImageUrl:
           rejectedMaterialImageUrl ?? this.rejectedMaterialImageUrl,
       actualWeight: actualWeight ?? this.actualWeight,
@@ -315,6 +323,7 @@ class PickupModel extends Equatable {
         createdAt,
         updatedAt,
         categoryWeights,
+        actualCategoryWeights,
         rejectedMaterialImageUrl,
         actualWeight,
         flatNumber,
