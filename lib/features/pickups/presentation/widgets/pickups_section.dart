@@ -1226,8 +1226,16 @@ class _PickupsSectionState extends State<PickupsSection>
               _detailItem(Icons.notes, 'Notes', pickup.notes!),
             ],
 
-            // Proof photos + optional rejected material side-by-side (completed pickups)
+            // Per-material photos when the driver captured them; otherwise the
+            // legacy single proof-set (completed pickups).
             if (pickup.isCompleted &&
+                pickup.categoryPhotos != null &&
+                pickup.categoryPhotos!.isNotEmpty) ...[
+              const SizedBox(height: 12),
+              const Divider(height: 1),
+              const SizedBox(height: 12),
+              ..._buildCategoryPhotoGroups(context, pickup.categoryPhotos!),
+            ] else if (pickup.isCompleted &&
                 (pickup.proofImageUrl != null ||
                     pickup.proofImageUrl2 != null ||
                     pickup.rejectedMaterialImageUrl != null)) ...[
@@ -1303,6 +1311,80 @@ class _PickupsSectionState extends State<PickupsSection>
         ),
       ),
     );
+  }
+
+  /// Render per-material photo groups from category_photos:
+  ///   { "Plastic": {"proof": [url1, url2], "rejected": url3|null}, ... }
+  /// One labelled row per material — proof photos, plus a rejected thumbnail
+  /// when present.
+  List<Widget> _buildCategoryPhotoGroups(
+    BuildContext context,
+    Map<String, dynamic> categoryPhotos,
+  ) {
+    final groups = <Widget>[];
+    for (final entry in categoryPhotos.entries) {
+      final material = entry.key;
+      final data = entry.value;
+      if (data is! Map) continue;
+
+      final proof = data['proof'] is List ? (data['proof'] as List) : const [];
+      final proofThumbs = <Widget>[];
+      for (final url in proof) {
+        if (url is String && url.isNotEmpty) {
+          if (proofThumbs.isNotEmpty) proofThumbs.add(const SizedBox(width: 8));
+          proofThumbs.add(_proofThumbnail(context, url));
+        }
+      }
+
+      final rejected = data['rejected'];
+      final hasRejected = rejected is String && rejected.isNotEmpty;
+
+      if (proofThumbs.isEmpty && !hasRejected) continue;
+
+      groups.add(
+        Padding(
+          padding: const EdgeInsets.only(bottom: 12),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (proofThumbs.isNotEmpty)
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '$material — Proof Photos',
+                      style: const TextStyle(
+                        fontSize: 10,
+                        color: AppColors.neutralDarkerGrey,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Row(children: proofThumbs),
+                  ],
+                ),
+              if (proofThumbs.isNotEmpty && hasRejected)
+                const SizedBox(width: 24),
+              if (hasRejected)
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '$material — Rejected',
+                      style: const TextStyle(
+                        fontSize: 10,
+                        color: AppColors.neutralDarkerGrey,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    _proofThumbnail(context, rejected),
+                  ],
+                ),
+            ],
+          ),
+        ),
+      );
+    }
+    return groups;
   }
 
   Widget _proofThumbnail(BuildContext context, String imageUrl) {

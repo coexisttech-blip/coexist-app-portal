@@ -91,6 +91,9 @@ class PickupModel extends Equatable {
   final DateTime updatedAt;
   final Map<String, dynamic>? categoryWeights;
   final Map<String, dynamic>? actualCategoryWeights;
+  // Per-material proof photos: { "Plastic": {"proof": [url1, url2],
+  // "rejected": url3|null}, ... }
+  final Map<String, dynamic>? categoryPhotos;
   final String? rejectedMaterialImageUrl;
   final double? actualWeight;
   final String? flatNumber;
@@ -124,6 +127,7 @@ class PickupModel extends Equatable {
     required this.updatedAt,
     this.categoryWeights,
     this.actualCategoryWeights,
+    this.categoryPhotos,
     this.rejectedMaterialImageUrl,
     this.actualWeight,
     this.flatNumber,
@@ -194,6 +198,9 @@ class PickupModel extends Equatable {
       categoryWeights: data['category_weights'] is Map
           ? Map<String, dynamic>.from(data['category_weights'] as Map)
           : null,
+      categoryPhotos: data['category_photos'] is Map
+          ? Map<String, dynamic>.from(data['category_photos'] as Map)
+          : null,
       rejectedMaterialImageUrl: data['rejected_material_image_url'],
       actualWeight: data['actual_weight'] != null
           ? (data['actual_weight'] as num).toDouble()
@@ -253,6 +260,7 @@ class PickupModel extends Equatable {
     DateTime? updatedAt,
     Map<String, dynamic>? categoryWeights,
     Map<String, dynamic>? actualCategoryWeights,
+    Map<String, dynamic>? categoryPhotos,
     String? rejectedMaterialImageUrl,
     double? actualWeight,
     String? flatNumber,
@@ -287,6 +295,7 @@ class PickupModel extends Equatable {
       categoryWeights: categoryWeights ?? this.categoryWeights,
       actualCategoryWeights:
           actualCategoryWeights ?? this.actualCategoryWeights,
+      categoryPhotos: categoryPhotos ?? this.categoryPhotos,
       rejectedMaterialImageUrl:
           rejectedMaterialImageUrl ?? this.rejectedMaterialImageUrl,
       actualWeight: actualWeight ?? this.actualWeight,
@@ -324,6 +333,7 @@ class PickupModel extends Equatable {
         updatedAt,
         categoryWeights,
         actualCategoryWeights,
+        categoryPhotos,
         rejectedMaterialImageUrl,
         actualWeight,
         flatNumber,
