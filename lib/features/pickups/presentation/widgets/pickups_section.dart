@@ -240,7 +240,11 @@ class _PickupsSectionState extends State<PickupsSection>
     }
   }
 
-  void _showAcceptDialog(BuildContext context, PickupModel pickup) {
+  void _showAcceptDialog(
+    BuildContext context,
+    PickupModel pickup, {
+    bool reassign = false,
+  }) {
     // Fetch drivers first, then show dialog
     final bloc = context.read<PickupBloc>();
 
@@ -252,7 +256,12 @@ class _PickupsSectionState extends State<PickupsSection>
         subscription.cancel();
         _drivers = state.drivers;
         if (context.mounted) {
-          _showAcceptDialogWithDrivers(context, pickup, state.drivers);
+          _showAcceptDialogWithDrivers(
+            context,
+            pickup,
+            state.drivers,
+            reassign: reassign,
+          );
         }
       } else if (state is PickupError) {
         subscription.cancel();
@@ -271,7 +280,7 @@ class _PickupsSectionState extends State<PickupsSection>
     // If we already have drivers cached, use them directly
     if (_drivers.isNotEmpty) {
       subscription.cancel();
-      _showAcceptDialogWithDrivers(context, pickup, _drivers);
+      _showAcceptDialogWithDrivers(context, pickup, _drivers, reassign: reassign);
     } else {
       bloc.add(const FetchDriversEvent());
     }
@@ -280,21 +289,34 @@ class _PickupsSectionState extends State<PickupsSection>
   void _showAcceptDialogWithDrivers(
     BuildContext context,
     PickupModel pickup,
-    List<UserProfileModel> drivers,
-  ) {
+    List<UserProfileModel> drivers, {
+    bool reassign = false,
+  }) {
+    // On reassign, pre-select the currently assigned driver so the admin can
+    // see who it's on and switch to a different one.
     UserProfileModel? selectedDriver;
+    if (reassign) {
+      for (final d in drivers) {
+        if (d.id == pickup.assignedTo) {
+          selectedDriver = d;
+          break;
+        }
+      }
+    }
 
     showDialog(
       context: context,
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setDialogState) => AlertDialog(
-          title: const Text('Accept Pickup'),
+          title: Text(reassign ? 'Reassign Driver' : 'Accept Pickup'),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Assign a driver to accept this pickup request.',
+                reassign
+                    ? 'Currently assigned to ${pickup.assignedDriverName?.trim().isNotEmpty == true ? pickup.assignedDriverName!.trim() : 'a driver'}. Choose a different driver below.'
+                    : 'Assign a driver to accept this pickup request.',
                 style: AppTextStyles.bodyMedium.copyWith(
                   color: AppColors.neutralDarkerGrey,
                 ),
@@ -377,7 +399,8 @@ class _PickupsSectionState extends State<PickupsSection>
               child: const Text('Cancel'),
             ),
             FilledButton(
-              onPressed: selectedDriver == null
+              onPressed: (selectedDriver == null ||
+                      (reassign && selectedDriver!.id == pickup.assignedTo))
                   ? null
                   : () {
                       context.read<PickupBloc>().add(AssignPickupEvent(
@@ -387,7 +410,7 @@ class _PickupsSectionState extends State<PickupsSection>
                       ));
                       Navigator.of(ctx).pop();
                     },
-              child: const Text('Accept'),
+              child: Text(reassign ? 'Reassign' : 'Accept'),
             ),
           ],
         ),
@@ -889,6 +912,12 @@ class _PickupsSectionState extends State<PickupsSection>
               CompletePickupEvent(pickupId: pickup.id),
             ),
           ),
+        ));
+        actions.add(_actionButton(
+          'Reassign Driver',
+          Icons.swap_horiz,
+          Colors.blue,
+          () => _showAcceptDialog(context, pickup, reassign: true),
         ));
         actions.add(_actionButton(
           'Reschedule',
