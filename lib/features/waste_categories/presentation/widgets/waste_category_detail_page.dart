@@ -23,6 +23,7 @@ class _WasteCategoryDetailPageState extends State<WasteCategoryDetailPage> {
   final _nameController = TextEditingController();
   final _descriptionController = TextEditingController();
   final _displayOrderController = TextEditingController();
+  final _maxWeightController = TextEditingController();
 
   String _parentCategory = '';
   String _unitOfMeasure = 'kg';
@@ -48,6 +49,7 @@ class _WasteCategoryDetailPageState extends State<WasteCategoryDetailPage> {
     _nameController.dispose();
     _descriptionController.dispose();
     _displayOrderController.dispose();
+    _maxWeightController.dispose();
     _customParentController.dispose();
     super.dispose();
   }
@@ -57,6 +59,11 @@ class _WasteCategoryDetailPageState extends State<WasteCategoryDetailPage> {
     _nameController.text = category.name;
     _descriptionController.text = category.description ?? '';
     _displayOrderController.text = category.displayOrder.toString();
+    _maxWeightController.text = category.maxWeight != null
+        ? (category.maxWeight! % 1 == 0
+            ? category.maxWeight!.toInt().toString()
+            : category.maxWeight!.toString())
+        : '';
     _parentCategory = category.parentCategory;
     _originalParent = category.parentCategory;
     _unitOfMeasure = category.unitOfMeasure;
@@ -123,6 +130,9 @@ class _WasteCategoryDetailPageState extends State<WasteCategoryDetailPage> {
           : _descriptionController.text.trim(),
       isActive: _isActive,
       displayOrder: int.tryParse(_displayOrderController.text) ?? 0,
+      maxWeight: _maxWeightController.text.trim().isEmpty
+          ? null
+          : double.tryParse(_maxWeightController.text.trim()),
     ));
   }
 
@@ -380,6 +390,32 @@ class _WasteCategoryDetailPageState extends State<WasteCategoryDetailPage> {
                             helperText: 'This text is displayed to app users',
                             helperMaxLines: 2,
                           ),
+                        ),
+                        const SizedBox(height: 16),
+
+                        // Max weight the customer can enter on the schedule
+                        // slider for this category (blank = default 25).
+                        TextFormField(
+                          controller: _maxWeightController,
+                          keyboardType:
+                              const TextInputType.numberWithOptions(decimal: true),
+                          decoration: InputDecoration(
+                            labelText: 'Max Weight (slider limit)',
+                            hintText: 'Leave blank for default (25)',
+                            border: const OutlineInputBorder(),
+                            suffixText: _unitOfMeasure,
+                            helperText:
+                                'Upper limit for this category on the customer schedule slider',
+                            helperMaxLines: 2,
+                          ),
+                          validator: (v) {
+                            if (v == null || v.trim().isEmpty) return null;
+                            final parsed = double.tryParse(v.trim());
+                            if (parsed == null || parsed <= 0) {
+                              return 'Enter a valid number';
+                            }
+                            return null;
+                          },
                         ),
                         const SizedBox(height: 16),
 

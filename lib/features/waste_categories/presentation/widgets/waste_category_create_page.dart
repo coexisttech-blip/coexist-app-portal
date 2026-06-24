@@ -20,6 +20,7 @@ class _WasteCategoryCreatePageState extends State<WasteCategoryCreatePage> {
   final _descriptionController = TextEditingController();
   final _displayOrderController = TextEditingController(text: '0');
   final _rateController = TextEditingController();
+  final _maxWeightController = TextEditingController();
   final _customParentController = TextEditingController();
 
   String _parentCategory = '';
@@ -40,6 +41,7 @@ class _WasteCategoryCreatePageState extends State<WasteCategoryCreatePage> {
     _descriptionController.dispose();
     _displayOrderController.dispose();
     _rateController.dispose();
+    _maxWeightController.dispose();
     _customParentController.dispose();
     super.dispose();
   }
@@ -95,6 +97,9 @@ class _WasteCategoryCreatePageState extends State<WasteCategoryCreatePage> {
       isActive: _isActive,
       displayOrder: int.tryParse(_displayOrderController.text) ?? 0,
       initialRate: rate,
+      maxWeight: _maxWeightController.text.trim().isEmpty
+          ? null
+          : double.tryParse(_maxWeightController.text.trim()),
     ));
   }
 
@@ -263,6 +268,29 @@ class _WasteCategoryCreatePageState extends State<WasteCategoryCreatePage> {
                           validator: (v) {
                             if (v == null || v.trim().isEmpty) return 'Rate is required';
                             if (double.tryParse(v) == null) return 'Enter a valid number';
+                            return null;
+                          },
+                        ),
+                        const SizedBox(height: 16),
+
+                        // Max weight the customer can enter on the schedule
+                        // slider for this category (optional; blank = default 25).
+                        TextFormField(
+                          controller: _maxWeightController,
+                          keyboardType:
+                              const TextInputType.numberWithOptions(decimal: true),
+                          decoration: InputDecoration(
+                            labelText: 'Max Weight (slider limit)',
+                            hintText: 'Leave blank for default (25)',
+                            border: const OutlineInputBorder(),
+                            suffixText: _unitOfMeasure,
+                          ),
+                          validator: (v) {
+                            if (v == null || v.trim().isEmpty) return null;
+                            final parsed = double.tryParse(v.trim());
+                            if (parsed == null || parsed <= 0) {
+                              return 'Enter a valid number';
+                            }
                             return null;
                           },
                         ),

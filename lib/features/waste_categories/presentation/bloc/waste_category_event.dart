@@ -46,6 +46,7 @@ class CreateCategoryEvent extends WasteCategoryEvent {
   final bool isActive;
   final int displayOrder;
   final double initialRate;
+  final double? maxWeight;
 
   const CreateCategoryEvent({
     required this.name,
@@ -55,11 +56,12 @@ class CreateCategoryEvent extends WasteCategoryEvent {
     required this.isActive,
     required this.displayOrder,
     required this.initialRate,
+    this.maxWeight,
   });
 
   @override
   List<Object?> get props =>
-      [name, parentCategory, unitOfMeasure, description, isActive, displayOrder, initialRate];
+      [name, parentCategory, unitOfMeasure, description, isActive, displayOrder, initialRate, maxWeight];
 }
 
 class UpdateCategoryEvent extends WasteCategoryEvent {
@@ -70,6 +72,7 @@ class UpdateCategoryEvent extends WasteCategoryEvent {
   final String? description;
   final bool isActive;
   final int displayOrder;
+  final double? maxWeight;
 
   const UpdateCategoryEvent({
     required this.id,
@@ -79,11 +82,12 @@ class UpdateCategoryEvent extends WasteCategoryEvent {
     this.description,
     required this.isActive,
     required this.displayOrder,
+    this.maxWeight,
   });
 
   @override
   List<Object?> get props =>
-      [id, name, parentCategory, unitOfMeasure, description, isActive, displayOrder];
+      [id, name, parentCategory, unitOfMeasure, description, isActive, displayOrder, maxWeight];
 }
 
 class FetchRateHistoryEvent extends WasteCategoryEvent {

@@ -11,6 +11,10 @@ class WasteCategoryModel extends Equatable {
   final DateTime createdAt;
   final double? currentRate;
 
+  /// Max weight/quantity the customer can enter on the schedule slider for
+  /// this category. Null = use the app default (25).
+  final double? maxWeight;
+
   const WasteCategoryModel({
     required this.id,
     required this.name,
@@ -21,6 +25,7 @@ class WasteCategoryModel extends Equatable {
     this.displayOrder = 0,
     required this.createdAt,
     this.currentRate,
+    this.maxWeight,
   });
 
   String get rateDisplay {
@@ -47,6 +52,7 @@ class WasteCategoryModel extends Equatable {
           ? DateTime.parse(data['created_at'].toString())
           : DateTime.now(),
       currentRate: rate,
+      maxWeight: (data['max_weight'] as num?)?.toDouble(),
     );
   }
 
@@ -60,6 +66,7 @@ class WasteCategoryModel extends Equatable {
     int? displayOrder,
     DateTime? createdAt,
     double? currentRate,
+    double? maxWeight,
   }) {
     return WasteCategoryModel(
       id: id ?? this.id,
@@ -71,6 +78,7 @@ class WasteCategoryModel extends Equatable {
       displayOrder: displayOrder ?? this.displayOrder,
       createdAt: createdAt ?? this.createdAt,
       currentRate: currentRate ?? this.currentRate,
+      maxWeight: maxWeight ?? this.maxWeight,
     );
   }
 
@@ -85,5 +93,6 @@ class WasteCategoryModel extends Equatable {
         displayOrder,
         createdAt,
         currentRate,
+        maxWeight,
       ];
 }

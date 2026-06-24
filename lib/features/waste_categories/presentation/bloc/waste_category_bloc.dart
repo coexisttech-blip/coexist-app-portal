@@ -95,6 +95,7 @@ class WasteCategoryBloc extends Bloc<WasteCategoryEvent, WasteCategoryState> {
         isActive: event.isActive,
         displayOrder: event.displayOrder,
         initialRate: event.initialRate,
+        maxWeight: event.maxWeight,
       );
       if (success) {
         emit(const WasteCategoryActionSuccess(message: 'Category created'));
@@ -120,6 +121,7 @@ class WasteCategoryBloc extends Bloc<WasteCategoryEvent, WasteCategoryState> {
         description: event.description,
         isActive: event.isActive,
         displayOrder: event.displayOrder,
+        maxWeight: event.maxWeight,
       );
       if (success) {
         emit(const WasteCategoryActionSuccess(message: 'Category updated'));

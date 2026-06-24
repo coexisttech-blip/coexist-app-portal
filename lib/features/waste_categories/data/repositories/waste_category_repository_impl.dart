@@ -75,6 +75,7 @@ class WasteCategoryRepositoryImpl implements WasteCategoryRepository {
     required bool isActive,
     required int displayOrder,
     required double initialRate,
+    double? maxWeight,
   }) async {
     try {
       final categoryResponse = await _supabaseClient
@@ -86,6 +87,7 @@ class WasteCategoryRepositoryImpl implements WasteCategoryRepository {
             'description': description,
             'is_active': isActive,
             'display_order': displayOrder,
+            'max_weight': maxWeight,
           })
           .select()
           .single();
@@ -113,6 +115,7 @@ class WasteCategoryRepositoryImpl implements WasteCategoryRepository {
     String? description,
     required bool isActive,
     required int displayOrder,
+    double? maxWeight,
   }) async {
     try {
       await _supabaseClient.from('waste_categories').update({
@@ -122,6 +125,7 @@ class WasteCategoryRepositoryImpl implements WasteCategoryRepository {
         'description': description,
         'is_active': isActive,
         'display_order': displayOrder,
+        'max_weight': maxWeight,
       }).eq('id', id);
       return true;
     } catch (e) {

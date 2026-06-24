@@ -16,6 +16,7 @@ abstract class WasteCategoryRepository {
     required bool isActive,
     required int displayOrder,
     required double initialRate,
+    double? maxWeight,
   });
 
   Future<bool> updateCategory({
@@ -26,6 +27,7 @@ abstract class WasteCategoryRepository {
     String? description,
     required bool isActive,
     required int displayOrder,
+    double? maxWeight,
   });
 
   Future<bool> toggleActive(String id, bool isActive);
