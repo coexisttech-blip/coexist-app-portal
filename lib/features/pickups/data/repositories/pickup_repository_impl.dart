@@ -209,7 +209,11 @@ class PickupRepositoryImpl implements PickupRepository {
         'scheduled_time': newTime,
         'reschedule_count': current.rescheduleCount + 1,
         'rescheduled_at': DateTime.now().toIso8601String(),
-        'status': PickupStatus.assigned.label,
+        // Reschedule only changes date/time — keep the pickup's current status
+        // (a Requested pickup stays Requested; an Assigned one stays Assigned
+        // with its driver). Previously this forced 'Assigned', which could
+        // create a driver-less "ghost Assigned" pickup.
+        'status': current.status.label,
         'updated_at': DateTime.now().toIso8601String(),
       }).eq('id', pickupId);
       return true;

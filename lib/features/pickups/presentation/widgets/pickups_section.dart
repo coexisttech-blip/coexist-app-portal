@@ -24,8 +24,6 @@ class _PickupsSectionState extends State<PickupsSection>
   static const _tabs = <PickupStatus?>[
     null,
     PickupStatus.requested,
-    PickupStatus.scheduled,
-    PickupStatus.approved,
     PickupStatus.assigned,
     PickupStatus.completed,
     PickupStatus.cancelled,
@@ -34,8 +32,6 @@ class _PickupsSectionState extends State<PickupsSection>
   static const _tabLabels = [
     'All',
     'Requested',
-    'Scheduled',
-    'Approved',
     'Assigned',
     'Completed',
     'Cancelled',
@@ -625,86 +621,6 @@ class _PickupsSectionState extends State<PickupsSection>
     return _timeSlots.first;
   }
 
-  void _showUpdateDateTimeDialog(BuildContext context, PickupModel pickup) {
-    DateTime selectedDate = pickup.pickupDate ?? pickup.scheduledDate;
-    String selectedTime = _matchTimeSlot(pickup.timeSlot.isNotEmpty ? pickup.timeSlot : pickup.scheduledTime);
-
-    showDialog(
-      context: context,
-      builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setDialogState) => AlertDialog(
-          title: const Text('Update Date & Time'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              ListTile(
-                contentPadding: EdgeInsets.zero,
-                leading: const Icon(Icons.calendar_today),
-                title: Text(DateFormatter.formatDate(selectedDate)),
-                trailing: const Icon(Icons.edit, size: 18),
-                onTap: () async {
-                  final date = await showDatePicker(
-                    context: ctx,
-                    initialDate: selectedDate,
-                    firstDate: DateTime.now(),
-                    lastDate: DateTime.now().add(const Duration(days: 365)),
-                  );
-                  if (date != null) {
-                    setDialogState(() => selectedDate = date);
-                  }
-                },
-              ),
-              const SizedBox(height: 12),
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.symmetric(horizontal: 12),
-                decoration: BoxDecoration(
-                  border: Border.all(color: Colors.grey.shade400),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: DropdownButtonHideUnderline(
-                  child: DropdownButton<String>(
-                    value: selectedTime,
-                    isExpanded: true,
-                    icon: const Icon(Icons.access_time, color: AppColors.primaryGreen),
-                    items: _timeSlots.map((slot) {
-                      return DropdownMenuItem(
-                        value: slot,
-                        child: Text(slot),
-                      );
-                    }).toList(),
-                    onChanged: (value) {
-                      if (value != null) {
-                        setDialogState(() => selectedTime = value);
-                      }
-                    },
-                  ),
-                ),
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(ctx).pop(),
-              child: const Text('Cancel'),
-            ),
-            FilledButton(
-              onPressed: () {
-                context.read<PickupBloc>().add(UpdateScheduleEvent(
-                  pickupId: pickup.id,
-                  newDate: selectedDate,
-                  newTime: selectedTime,
-                ));
-                Navigator.of(ctx).pop();
-              },
-              child: const Text('Update'),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
   void _showRescheduleDialog(BuildContext context, PickupModel pickup) {
     DateTime selectedDate = pickup.scheduledDate;
     String selectedTime = _matchTimeSlot(pickup.scheduledTime);
@@ -825,43 +741,9 @@ class _PickupsSectionState extends State<PickupsSection>
           () => _showAcceptAndAssignDialog(context, pickup),
         ));
         actions.add(_actionButton(
-          'Schedule',
-          Icons.edit_calendar,
-          Colors.indigo,
-          () => _showUpdateDateTimeDialog(context, pickup),
-        ));
-        actions.add(_actionButton(
-          'Cancel',
-          Icons.cancel_outlined,
-          Colors.red,
-          () => _confirmAction(
-            context,
-            'Cancel Pickup',
-            'Are you sure you want to cancel this pickup?',
-            () => context.read<PickupBloc>().add(
-              CancelPickupEvent(pickupId: pickup.id),
-            ),
-          ),
-        ));
-        break;
-      case PickupStatus.scheduled:
-        actions.add(_actionButton(
-          'Approve',
-          Icons.thumb_up_outlined,
-          Colors.teal,
-          () => _confirmAction(
-            context,
-            'Approve Pickup',
-            'Approve this scheduled pickup?',
-            () => context.read<PickupBloc>().add(
-              ApprovePickupEvent(pickupId: pickup.id),
-            ),
-          ),
-        ));
-        actions.add(_actionButton(
           'Reschedule',
           Icons.edit_calendar,
-          Colors.orange,
+          Colors.indigo,
           () => _showRescheduleDialog(context, pickup),
         ));
         actions.add(_actionButton(
@@ -878,26 +760,10 @@ class _PickupsSectionState extends State<PickupsSection>
           ),
         ));
         break;
+      // Scheduled and Approved are retired states — kept in the enum only so
+      // any legacy row still parses. No transition targets them anymore.
+      case PickupStatus.scheduled:
       case PickupStatus.approved:
-        actions.add(_actionButton(
-          'Assign Driver',
-          Icons.person_add,
-          Colors.blue,
-          () => _showAcceptDialog(context, pickup),
-        ));
-        actions.add(_actionButton(
-          'Cancel',
-          Icons.cancel_outlined,
-          Colors.red,
-          () => _confirmAction(
-            context,
-            'Cancel Pickup',
-            'Are you sure you want to cancel this pickup?',
-            () => context.read<PickupBloc>().add(
-              CancelPickupEvent(pickupId: pickup.id),
-            ),
-          ),
-        ));
         break;
       case PickupStatus.assigned:
         actions.add(_actionButton(
