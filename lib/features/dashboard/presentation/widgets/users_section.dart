@@ -37,7 +37,17 @@ class _UsersSectionState extends State<UsersSection> {
   String _selectedRole = 'All';
   final _searchController = TextEditingController();
 
+  // Sorting — joined | wallet | lifetime | pickups
+  String _sortBy = 'joined';
+  bool _sortAsc = false; // default: joined newest-first (descending)
+
   static const _roles = ['All', 'admin', 'user', 'volunteer', 'driver'];
+  static const _sortLabels = {
+    'joined': 'Joined date',
+    'wallet': 'Wallet balance',
+    'lifetime': 'Lifetime earnings',
+    'pickups': 'Pickups requested',
+  };
 
   @override
   void initState() {
@@ -161,7 +171,8 @@ class _UsersSectionState extends State<UsersSection> {
     }
   }
 
-  Widget _buildUserStatsLine(UserProfileModel user) {
+  Widget _buildUserStatsLine(UserProfileModel user,
+      {bool showPickupCount = true}) {
     final addresses = _addressCounts[user.id] ?? 0;
     final parts = <String>[
       '$addresses ${addresses == 1 ? 'address' : 'addresses'}',
@@ -179,10 +190,12 @@ class _UsersSectionState extends State<UsersSection> {
     } else {
       final pickups = _pickupCounts[user.id] ?? 0;
       final lastPickup = _lastPickupDate[user.id];
-      parts.add('$pickups ${pickups == 1 ? 'pickup' : 'pickups'} requested');
-      parts.add(lastPickup != null
-          ? 'Last requested: ${DateFormatter.formatDate(lastPickup)}'
-          : 'No pickups yet');
+      if (showPickupCount) {
+        parts.add('$pickups ${pickups == 1 ? 'pickup' : 'pickups'} requested');
+        parts.add(lastPickup != null
+            ? 'Last requested: ${DateFormatter.formatDate(lastPickup)}'
+            : 'No pickups yet');
+      }
     }
 
     return Padding(
@@ -215,7 +228,42 @@ class _UsersSectionState extends State<UsersSection> {
       }).toList();
     }
 
-    _filteredUsers = filtered;
+    // Copy before sorting so we never mutate _allUsers in place.
+    final sorted = List<UserProfileModel>.of(filtered);
+    final dir = _sortAsc ? 1 : -1;
+    sorted.sort((a, b) {
+      switch (_sortBy) {
+        case 'wallet':
+          return dir *
+              (_walletBalance[a.id] ?? 0).compareTo(_walletBalance[b.id] ?? 0);
+        case 'lifetime':
+          return dir *
+              (_lifetimeEarnings[a.id] ?? 0)
+                  .compareTo(_lifetimeEarnings[b.id] ?? 0);
+        case 'pickups':
+          return dir *
+              (_pickupCounts[a.id] ?? 0).compareTo(_pickupCounts[b.id] ?? 0);
+        case 'joined':
+        default:
+          return dir * a.joinedAt.compareTo(b.joinedAt);
+      }
+    });
+
+    _filteredUsers = sorted;
+  }
+
+  void _onSortByChanged(String value) {
+    setState(() {
+      _sortBy = value;
+      _applyFilters();
+    });
+  }
+
+  void _toggleSortDirection() {
+    setState(() {
+      _sortAsc = !_sortAsc;
+      _applyFilters();
+    });
   }
 
   void _onSearchChanged(String value) {
@@ -380,7 +428,7 @@ class _UsersSectionState extends State<UsersSection> {
                       color: AppColors.neutralDarkerGrey,
                     ),
                   ),
-                  _buildUserStatsLine(user),
+                  _buildUserStatsLine(user, showPickupCount: false),
                 ],
               ),
             ),
@@ -402,6 +450,19 @@ class _UsersSectionState extends State<UsersSection> {
                 ],
               ),
             ),
+
+            // Pickups requested
+            SizedBox(
+              width: 130,
+              child: _buildWalletField(
+                icon: Icons.local_shipping,
+                label: 'Pickups',
+                value: _pickupCounts[user.id] ?? 0,
+                color: Colors.orange.shade700,
+                subtitle: _lastRequestedSubtitle(user),
+              ),
+            ),
+            const SizedBox(width: 12),
 
             // Wallet balance + lifetime earnings
             SizedBox(
@@ -527,7 +588,7 @@ class _UsersSectionState extends State<UsersSection> {
                         ),
                         overflow: TextOverflow.ellipsis,
                       ),
-                      _buildUserStatsLine(user),
+                      _buildUserStatsLine(user, showPickupCount: false),
                     ],
                   ),
                 ),
@@ -591,6 +652,16 @@ class _UsersSectionState extends State<UsersSection> {
                     color: AppColors.primaryDarkGreen,
                   ),
                 ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: _buildWalletField(
+                    icon: Icons.local_shipping,
+                    label: 'Pickups',
+                    value: _pickupCounts[user.id] ?? 0,
+                    color: Colors.orange.shade700,
+                    subtitle: _lastRequestedSubtitle(user),
+                  ),
+                ),
               ],
             ),
           ],
@@ -604,6 +675,7 @@ class _UsersSectionState extends State<UsersSection> {
     required String label,
     required int value,
     required Color color,
+    String? subtitle,
   }) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
@@ -637,12 +709,30 @@ class _UsersSectionState extends State<UsersSection> {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
+                if (subtitle != null)
+                  Text(
+                    subtitle,
+                    style: AppTextStyles.bodySmall.copyWith(
+                      fontSize: 9,
+                      color: AppColors.neutralDarkerGrey,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
               ],
             ),
           ),
         ],
       ),
     );
+  }
+
+  /// "Last: 28 Jun 2026" / "No pickups yet" for the Pickups card subtitle.
+  String _lastRequestedSubtitle(UserProfileModel user) {
+    final last = _lastPickupDate[user.id];
+    return last != null
+        ? 'Last: ${DateFormatter.formatDate(last)}'
+        : 'No pickups yet';
   }
 
   @override
@@ -705,6 +795,8 @@ class _UsersSectionState extends State<UsersSection> {
                   Expanded(child: _buildSearchField()),
                   const SizedBox(width: 12),
                   _buildRoleFilter(),
+                  const SizedBox(width: 12),
+                  _buildSortControl(),
                 ],
               );
             }
@@ -712,9 +804,12 @@ class _UsersSectionState extends State<UsersSection> {
               children: [
                 _buildSearchField(),
                 const SizedBox(height: 10),
-                Align(
-                  alignment: Alignment.centerLeft,
-                  child: _buildRoleFilter(),
+                Row(
+                  children: [
+                    _buildRoleFilter(),
+                    const SizedBox(width: 10),
+                    Expanded(child: _buildSortControl()),
+                  ],
                 ),
               ],
             );
@@ -833,6 +928,53 @@ class _UsersSectionState extends State<UsersSection> {
           },
           icon: const Icon(Icons.filter_list, color: AppColors.primaryGreen),
         ),
+      ),
+    );
+  }
+
+  Widget _buildSortControl() {
+    return Container(
+      padding: const EdgeInsets.only(left: 12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey.shade300),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(Icons.sort, size: 18, color: AppColors.neutralDarkerGrey),
+          const SizedBox(width: 6),
+          DropdownButtonHideUnderline(
+            child: DropdownButton<String>(
+              value: _sortBy,
+              items: _sortLabels.entries.map((e) {
+                return DropdownMenuItem(
+                  value: e.key,
+                  child: Text(
+                    'Sort: ${e.value}',
+                    style: AppTextStyles.bodyMedium,
+                  ),
+                );
+              }).toList(),
+              onChanged: (value) {
+                if (value != null) _onSortByChanged(value);
+              },
+              icon: const Icon(Icons.arrow_drop_down,
+                  color: AppColors.primaryGreen),
+            ),
+          ),
+          IconButton(
+            onPressed: _toggleSortDirection,
+            visualDensity: VisualDensity.compact,
+            tooltip: _sortAsc ? 'Ascending' : 'Descending',
+            icon: Icon(
+              _sortAsc ? Icons.arrow_upward : Icons.arrow_downward,
+              size: 18,
+              color: AppColors.primaryGreen,
+            ),
+          ),
+        ],
       ),
     );
   }
