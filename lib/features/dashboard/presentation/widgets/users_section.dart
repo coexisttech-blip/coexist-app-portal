@@ -26,6 +26,8 @@ class _UsersSectionState extends State<UsersSection> {
   // Customer-side aggregates (keyed by user_id of the requester)
   Map<String, int> _pickupCounts = {};
   Map<String, DateTime?> _lastPickupDate = {};
+  // Cash earned from completed pickups (sum of money_earned), keyed by user_id
+  Map<String, double> _pickupEarnings = {};
   // Driver-side aggregates (keyed by driver_id)
   Map<String, int> _driverAssignedCounts = {};
   Map<String, int> _driverCompletedCounts = {};
@@ -47,6 +49,7 @@ class _UsersSectionState extends State<UsersSection> {
     'wallet': 'Wallet balance',
     'lifetime': 'Lifetime earnings',
     'pickups': 'Pickups requested',
+    'earned': 'Pickup ₹ earned',
   };
 
   @override
@@ -71,7 +74,7 @@ class _UsersSectionState extends State<UsersSection> {
         supabase.from('saved_addresses').select('user_id'),
         supabase
             .from('waste_pickups')
-            .select('user_id, driver_id, status, created_at'),
+            .select('user_id, driver_id, status, created_at, money_earned'),
         supabase.from('user_tokens').select('user_id, balance, lifetime_balance'),
       ]);
 
@@ -92,6 +95,7 @@ class _UsersSectionState extends State<UsersSection> {
       //  - Driver side: pickups assigned to them (keyed by driver_id)
       final pickupCounts = <String, int>{};
       final lastPickupDate = <String, DateTime?>{};
+      final pickupEarnings = <String, double>{};
       final driverAssignedCounts = <String, int>{};
       final driverCompletedCounts = <String, int>{};
       final lastDriverAssignedDate = <String, DateTime?>{};
@@ -99,6 +103,7 @@ class _UsersSectionState extends State<UsersSection> {
         final m = row as Map;
         final createdRaw = m['created_at']?.toString();
         final created = createdRaw != null ? DateTime.tryParse(createdRaw) : null;
+        final status = m['status']?.toString().toLowerCase() ?? '';
 
         // Customer-side
         final uid = m['user_id']?.toString();
@@ -109,6 +114,12 @@ class _UsersSectionState extends State<UsersSection> {
             if (existing == null || created.isAfter(existing)) {
               lastPickupDate[uid] = created;
             }
+          }
+          // Cash earned — only counts completed pickups, mirroring the
+          // mobile home page's "You've Earned" total.
+          if (status == 'completed' || status == 'request completed') {
+            final earned = (m['money_earned'] as num?)?.toDouble() ?? 0;
+            pickupEarnings[uid] = (pickupEarnings[uid] ?? 0) + earned;
           }
         }
 
@@ -145,6 +156,7 @@ class _UsersSectionState extends State<UsersSection> {
         _addressCounts = addressCounts;
         _pickupCounts = pickupCounts;
         _lastPickupDate = lastPickupDate;
+        _pickupEarnings = pickupEarnings;
         _driverAssignedCounts = driverAssignedCounts;
         _driverCompletedCounts = driverCompletedCounts;
         _lastDriverAssignedDate = lastDriverAssignedDate;
@@ -161,6 +173,7 @@ class _UsersSectionState extends State<UsersSection> {
         _addressCounts = {};
         _pickupCounts = {};
         _lastPickupDate = {};
+        _pickupEarnings = {};
         _driverAssignedCounts = {};
         _driverCompletedCounts = {};
         _lastDriverAssignedDate = {};
@@ -243,6 +256,10 @@ class _UsersSectionState extends State<UsersSection> {
         case 'pickups':
           return dir *
               (_pickupCounts[a.id] ?? 0).compareTo(_pickupCounts[b.id] ?? 0);
+        case 'earned':
+          return dir *
+              (_pickupEarnings[a.id] ?? 0)
+                  .compareTo(_pickupEarnings[b.id] ?? 0);
         case 'joined':
         default:
           return dir * a.joinedAt.compareTo(b.joinedAt);
@@ -318,6 +335,7 @@ class _UsersSectionState extends State<UsersSection> {
         'Last Job (driver)',
         'Wallet Balance (coins)',
         'Lifetime Earnings (coins)',
+        'Pickup Earnings (₹)',
       ];
       sheet.appendRow(headers.map<xl.CellValue?>((h) => xl.TextCellValue(h)).toList());
 
@@ -357,6 +375,7 @@ class _UsersSectionState extends State<UsersSection> {
               : null,
           xl.IntCellValue(_walletBalance[u.id] ?? 0),
           xl.IntCellValue(_lifetimeEarnings[u.id] ?? 0),
+          xl.DoubleCellValue(_pickupEarnings[u.id] ?? 0),
         ]);
       }
 
@@ -460,6 +479,19 @@ class _UsersSectionState extends State<UsersSection> {
                 value: _pickupCounts[user.id] ?? 0,
                 color: Colors.orange.shade700,
                 subtitle: _lastRequestedSubtitle(user),
+              ),
+            ),
+            const SizedBox(width: 12),
+
+            // Pickup cash earned (sum of money_earned, completed only)
+            SizedBox(
+              width: 110,
+              child: _buildWalletField(
+                icon: Icons.payments,
+                label: 'Earned',
+                value: 0,
+                valueText: '₹${(_pickupEarnings[user.id] ?? 0).toStringAsFixed(0)}',
+                color: Colors.teal.shade700,
               ),
             ),
             const SizedBox(width: 12),
@@ -652,7 +684,11 @@ class _UsersSectionState extends State<UsersSection> {
                     color: AppColors.primaryDarkGreen,
                   ),
                 ),
-                const SizedBox(width: 10),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Row(
+              children: [
                 Expanded(
                   child: _buildWalletField(
                     icon: Icons.local_shipping,
@@ -660,6 +696,17 @@ class _UsersSectionState extends State<UsersSection> {
                     value: _pickupCounts[user.id] ?? 0,
                     color: Colors.orange.shade700,
                     subtitle: _lastRequestedSubtitle(user),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: _buildWalletField(
+                    icon: Icons.payments,
+                    label: 'Earned (pickups)',
+                    value: 0,
+                    valueText:
+                        '₹${(_pickupEarnings[user.id] ?? 0).toStringAsFixed(0)}',
+                    color: Colors.teal.shade700,
                   ),
                 ),
               ],
@@ -676,6 +723,7 @@ class _UsersSectionState extends State<UsersSection> {
     required int value,
     required Color color,
     String? subtitle,
+    String? valueText,
   }) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
@@ -701,7 +749,7 @@ class _UsersSectionState extends State<UsersSection> {
                   overflow: TextOverflow.ellipsis,
                 ),
                 Text(
-                  '$value',
+                  valueText ?? '$value',
                   style: AppTextStyles.bodyMedium.copyWith(
                     fontWeight: FontWeight.w700,
                     color: color,
