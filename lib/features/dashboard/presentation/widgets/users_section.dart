@@ -30,6 +30,9 @@ class _UsersSectionState extends State<UsersSection> {
   Map<String, int> _driverAssignedCounts = {};
   Map<String, int> _driverCompletedCounts = {};
   Map<String, DateTime?> _lastDriverAssignedDate = {};
+  // Wallet aggregates from user_tokens (keyed by user_id)
+  Map<String, int> _walletBalance = {};
+  Map<String, int> _lifetimeEarnings = {};
   String _searchQuery = '';
   String _selectedRole = 'All';
   final _searchController = TextEditingController();
@@ -59,6 +62,7 @@ class _UsersSectionState extends State<UsersSection> {
         supabase
             .from('waste_pickups')
             .select('user_id, driver_id, status, created_at'),
+        supabase.from('user_tokens').select('user_id, balance, lifetime_balance'),
       ]);
 
       final users = (results[0] as List)
@@ -114,6 +118,17 @@ class _UsersSectionState extends State<UsersSection> {
         }
       }
 
+      // Aggregate wallet balances per user from user_tokens
+      final walletBalance = <String, int>{};
+      final lifetimeEarnings = <String, int>{};
+      for (final row in (results[3] as List)) {
+        final m = row as Map;
+        final uid = m['user_id']?.toString();
+        if (uid == null) continue;
+        walletBalance[uid] = (m['balance'] as num?)?.toInt() ?? 0;
+        lifetimeEarnings[uid] = (m['lifetime_balance'] as num?)?.toInt() ?? 0;
+      }
+
       if (!mounted) return;
       setState(() {
         _allUsers = users;
@@ -123,6 +138,8 @@ class _UsersSectionState extends State<UsersSection> {
         _driverAssignedCounts = driverAssignedCounts;
         _driverCompletedCounts = driverCompletedCounts;
         _lastDriverAssignedDate = lastDriverAssignedDate;
+        _walletBalance = walletBalance;
+        _lifetimeEarnings = lifetimeEarnings;
         _applyFilters();
         _loading = false;
       });
@@ -137,6 +154,8 @@ class _UsersSectionState extends State<UsersSection> {
         _driverAssignedCounts = {};
         _driverCompletedCounts = {};
         _lastDriverAssignedDate = {};
+        _walletBalance = {};
+        _lifetimeEarnings = {};
         _loading = false;
       });
     }
@@ -249,6 +268,8 @@ class _UsersSectionState extends State<UsersSection> {
         'Jobs Assigned (driver)',
         'Jobs Completed (driver)',
         'Last Job (driver)',
+        'Wallet Balance (coins)',
+        'Lifetime Earnings (coins)',
       ];
       sheet.appendRow(headers.map<xl.CellValue?>((h) => xl.TextCellValue(h)).toList());
 
@@ -286,6 +307,8 @@ class _UsersSectionState extends State<UsersSection> {
           isDriver && lastJob != null
               ? xl.TextCellValue(isoFmt.format(lastJob))
               : null,
+          xl.IntCellValue(_walletBalance[u.id] ?? 0),
+          xl.IntCellValue(_lifetimeEarnings[u.id] ?? 0),
         ]);
       }
 
@@ -379,6 +402,33 @@ class _UsersSectionState extends State<UsersSection> {
                 ],
               ),
             ),
+
+            // Wallet balance + lifetime earnings
+            SizedBox(
+              width: 180,
+              child: Row(
+                children: [
+                  Expanded(
+                    child: _buildWalletField(
+                      icon: Icons.account_balance_wallet,
+                      label: 'Wallet',
+                      value: _walletBalance[user.id] ?? 0,
+                      color: AppColors.primaryGreen,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: _buildWalletField(
+                      icon: Icons.savings,
+                      label: 'Lifetime',
+                      value: _lifetimeEarnings[user.id] ?? 0,
+                      color: AppColors.primaryDarkGreen,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 12),
 
             // Role badge
             SizedBox(
@@ -521,8 +571,76 @@ class _UsersSectionState extends State<UsersSection> {
                 ),
               ],
             ),
+            const SizedBox(height: 10),
+            Row(
+              children: [
+                Expanded(
+                  child: _buildWalletField(
+                    icon: Icons.account_balance_wallet,
+                    label: 'Wallet Balance',
+                    value: _walletBalance[user.id] ?? 0,
+                    color: AppColors.primaryGreen,
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: _buildWalletField(
+                    icon: Icons.savings,
+                    label: 'Lifetime Earnings',
+                    value: _lifetimeEarnings[user.id] ?? 0,
+                    color: AppColors.primaryDarkGreen,
+                  ),
+                ),
+              ],
+            ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildWalletField({
+    required IconData icon,
+    required String label,
+    required int value,
+    required Color color,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: color.withValues(alpha: 0.25)),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, size: 16, color: color),
+          const SizedBox(width: 6),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: AppTextStyles.bodySmall.copyWith(
+                    fontSize: 10,
+                    color: AppColors.neutralDarkerGrey,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                ),
+                Text(
+                  '$value',
+                  style: AppTextStyles.bodyMedium.copyWith(
+                    fontWeight: FontWeight.w700,
+                    color: color,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
